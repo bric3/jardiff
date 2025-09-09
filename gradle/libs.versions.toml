@@ -1,7 +1,18 @@
 [versions]
 kotlin-gradle-plugin = "2.2.0"
 picocli = "4.7.7"
+asm = "9.8"
+javadiffutils = "4.15"
+bytebuddyagent = "1.17.7"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+javadiffutils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "javadiffutils" }
+bytebuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddyagent" }
+bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddyagent" }
+
+[bundles]
+asm = ["asm", "asm-util"]
