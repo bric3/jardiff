@@ -1,0 +1,7 @@
+[versions]
+kotlin-gradle-plugin = "2.2.0"
+picocli = "4.7.7"
+
+[libraries]
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
