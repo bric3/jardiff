@@ -5,7 +5,7 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceClassVisitor
-import java.io.IOException
+import java.io.BufferedInputStream
 import java.io.InputStream
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -14,7 +14,10 @@ import java.security.MessageDigest
 import kotlin.io.path.extension
 
 object FileReader {
-    fun readFileAsTextIfPossible(fileLines: FileLines?): List<String> {
+    fun readFileAsTextIfPossible(
+        fileLines: FileLines?,
+        classExtensions: List<String> = listOf("class")
+    ): List<String> {
         if (fileLines == null) {
             return emptyList()
         }
@@ -23,25 +26,32 @@ object FileReader {
         // * is class file?
         // * is text file?
         // * is other binary file? then limit to checksum
-        if (fileLines.relativePath.extension == "class") {
-            return asmTextifier(fileLines.bufferedInputStream)
-        }
-
-        return fileLines.bufferedInputStream.use {
+        fileLines.bufferedInputStream.use {
             // detect charset
             // if confidence is low, then assume binary
             val detector = CharsetDetector().setText(it)
             val match = detector.detect()
             if (match.confidence > 80) {
-                it.reader(Charset.forName(match.name)).readLines()
-            } else {
-                // For now just return the sha1 of the binary file
-                // Next show binary diff? E.g.
-                //  │00000000│ 23 21 2f 62 69 6e 2f 73 ┊ 68 0a 0a 23 0a 23 20 43 │#!/bin/s┊h__#_# C│
-                return listOf("BINARY FILE SHA-1: ${sha1Hex(fileLines.bufferedInputStream)}")
+                return it.reader(Charset.forName(match.name)).readLines()
             }
+
+            // is it a class file?
+            if (fileLines.relativePath.extension in classExtensions) {
+                return kotlin.runCatching {
+                    asmTextifier(it)
+                }.getOrElse { t ->
+                    binaryToText(it)
+                }
+            }
+
+            return binaryToText(it)
         }
     }
+
+    // For now just return the sha1 of the binary file
+    // Next show binary diff? E.g.
+    //  │00000000│ 23 21 2f 62 69 6e 2f 73 ┊ 68 0a 0a 23 0a 23 20 43 │#!/bin/s┊h__#_# C│
+    private fun binaryToText(it: BufferedInputStream) = listOf("BINARY FILE SHA-1: ${sha1Hex(it)}")
 
     private fun sha1Hex(input: InputStream): String {
         return input.use {
@@ -63,19 +73,19 @@ object FileReader {
         }.toString().lines()
     }
 
-    private class AnyInputStreamTextifier : Textifier(/* latest api = */ Opcodes.ASM9) {
+    private class AnyInputStreamTextifier : Textifier(Opcodes.ASM9) {
         /**
          * Directly replace [Textifier.main] / [org.objectweb.asm.util.Printer.main] to read from [InputStream].
          *
          * Closes the [inputStream] when done.
          */
-        fun textify(output: PrintWriter, inputStream: InputStream, nodebug: Boolean = false) {
+        fun textify(output: PrintWriter, inputStream: InputStream, noDebug: Boolean = false) {
             val traceClassVisitor = TraceClassVisitor(null, output)
 
             inputStream.use {
                 ClassReader(it).accept(
                     traceClassVisitor,
-                    if (nodebug) ClassReader.SKIP_DEBUG else 0
+                    if (noDebug) ClassReader.SKIP_DEBUG else 0
                 )
             }
         }
