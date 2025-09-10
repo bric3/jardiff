@@ -1,8 +1,56 @@
 # Jardiff
 
 Jardiff is a command-line tool for comparing the contents of JAR files and directories. It provides detailed, line-based diffs of class files and resources, making it easy to spot changes between builds, releases, or different versions of Java/Kotlin projects.
+         
+Example output:
+
+```diff
+⨯ foo/bar/qux/Baz.class
+--- foo/bar/qux/Baz.class
++++ foo/bar/qux/Baz.class
+@@ -6,1548 +6,17 @@
+   // access flags 0x9
+   public static create()Lfoo/bar/ZuulMatcher;
+     NEW foo/bar/ZuulMatcher
+     DUP
+-    LDC 15
++    LDC 3
+     ANEWARRAY foo/bar/Zuul
+     DUP
+     LDC 0
+     NEW foo/bar/Zuul
+     DUP
+-    LDC 14
+-    ANEWARRAY java/lang/String
+-    DUP
+     LDC 0
+-    LDC "foo.bar.qux.T:18"
+-    AASTORE
+-    DUP
+-    LDC 1
+-    LDC "foo.bar.qux.U:33"
+-    AASTORE
+-    DUP
+-    LDC 2
+-    LDC "foo.bar.qux.V:49"
+-    AASTORE
+-    DUP
+-    LDC 3
+-    LDC "foo.bar.qux.W:68"
+-    AASTORE
+-    DUP
+ ...
++    LDC 2
+     NEW foo/bar/Zuul
+     DUP
+     LDC 0
+     ANEWARRAY java/lang/String
+✔️ foo/bar/qux/Zorg.class
+```
 
 ## Features
+
+Other tools didn't have the feature I wanted, or they were impractical to use, so I made my own.
 
 * Compare JARs and directories recursively
 * Line-based diffs for each files
@@ -21,8 +69,8 @@ Unsupported at this time, if ever...
 
 ## Usage
                  
-> [!CAUTION] This tool needs a JDK24 to build and run
-> Example with `mise`
+> [!CAUTION] 
+> This tool needs a JDK24 to build and run. Example with `mise`
 > ```shell
 > $ mise exec java@corretto-24 -- java -jar jardiff-0.1.0-SNAPSHOT.jar
 > ```
