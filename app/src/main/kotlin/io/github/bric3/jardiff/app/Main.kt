@@ -35,7 +35,9 @@ class Main : Runnable {
             """.trimIndent()
         )
 
-        Differ(left = left, right = right).diff()
+        Differ(left = left, right = right).use {
+            it.diff()
+        }
     }
 
     companion object {

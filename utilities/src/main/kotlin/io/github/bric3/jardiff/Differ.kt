@@ -2,18 +2,24 @@ package io.github.bric3.jardiff
 
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
+import java.io.BufferedInputStream
+import java.io.Closeable
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.function.Consumer
+import java.util.jar.JarFile
 import kotlin.streams.asSequence
 
 class Differ(
     val left: PathToDiff,
     val right: PathToDiff,
     private val classExtensions: List<String> = listOf("class")
-) {
+) : AutoCloseable {
+    private val childCloseables = mutableListOf<Closeable>()
+
     fun diff() {
-        val leftEntries = left.fileEntries()
-        val rightEntries = right.fileEntries()
+        val leftEntries = left.fileEntries(childCloseables::add)
+        val rightEntries = right.fileEntries(childCloseables::add)
 
         // leftLines or rightLines may not be symmetric
         val listOfFilesToDiff = makeListOfFilesToDiff(leftEntries, rightEntries)
@@ -55,6 +61,16 @@ class Differ(
         }
         return changes
     }
+
+    override fun close() {
+        childCloseables.forEach {
+            try {
+                it.close()
+            } catch (e: Exception) {
+                Logger.stderr("Error closing resource: ${e.message}")
+            }
+        }
+    }
 }
 
 data class FileEntryToDiff(
@@ -63,31 +79,46 @@ data class FileEntryToDiff(
     val right: FileLines?,
 )
 
-data class FileLines(
+sealed class FileLines(
     val parentPath: Path,
     val relativePath: Path,
 ) : Comparable<FileLines> {
-    val lines by lazy { Files.readAllLines(parentPath.resolve(relativePath)) }
-    val bufferedInputStream by lazy { Files.newInputStream(parentPath.resolve(relativePath)).buffered() }
+    abstract val bufferedInputStream: BufferedInputStream
     override fun compareTo(other: FileLines): Int {
         return relativePath.compareTo(other.relativePath)
+    }
+    class FromJar(parentPath: Path, relativePath: Path, private val jarFile: JarFile) : FileLines(parentPath, relativePath) {
+        override val bufferedInputStream: BufferedInputStream by lazy {
+            jarFile.getInputStream(jarFile.getEntry(relativePath.toString())).buffered()
+        }
+    }
+    class FromDirectory(parentPath: Path, relativePath: Path) : FileLines(parentPath, relativePath) {
+        override val bufferedInputStream: BufferedInputStream by lazy {
+            Files.newInputStream(parentPath.resolve(relativePath)).buffered()
+        }
     }
 }
 
 sealed class PathToDiff(val leftOrRight: LeftOrRight, val path: Path) {
     enum class LeftOrRight { LEFT, RIGHT }
-    abstract fun fileEntries(): Map<Path, FileLines>
+    abstract fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines>
     class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
-        override fun fileEntries(): Map<Path, FileLines> {
-            TODO("Not yet implemented: JarUtils.readJarEntries(left.path)")
+        override fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines> {
+            val jf = JarFile(path.toFile()).also {
+                closeable.accept(it)
+            }
+            return jf.entries().asSequence()
+                .filter { it.isDirectory.not() }
+                .map { FileLines.FromJar(path, Path.of(it.name), jf) }
+                .associateBy { it.relativePath }
         }
     }
 
     class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
-        override fun fileEntries(): Map<Path, FileLines> {
+        override fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines> {
             return Files.walk(path).asSequence()
                 .filter { Files.isRegularFile(it) }
-                .map { FileLines(path, path.relativize(it)) }
+                .map { FileLines.FromDirectory(path, path.relativize(it)) }
                 .associateBy { it.relativePath }
         }
     }
