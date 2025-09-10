@@ -11,4 +11,29 @@
 plugins {
     id("buildlogic.kotlin-common-conventions")
     application
+    id("com.gradleup.shadow")
 }
+
+
+
+tasks {
+    shadowJar {
+        archiveBaseName = project.name
+        destinationDirectory = project.layout.buildDirectory.dir("shadowed-app")
+        // removes the `-all` classifier from the artifact name
+        archiveClassifier = ""
+    }
+
+    // empty javadocJar to satisfy maven central requirements
+    register<Jar>("javadocJar") {
+        archiveClassifier.set("javadoc")
+    }
+
+    distTar {
+        enabled = false
+    }
+    distZip {
+        enabled = false
+    }
+}
+
