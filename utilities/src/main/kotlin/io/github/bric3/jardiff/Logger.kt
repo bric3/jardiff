@@ -11,9 +11,9 @@
 package io.github.bric3.jardiff
 
 object Logger {
-    val GREEN = "\u001B[32m"
-    val RED = "\u001B[31m"
-    val RESET = "\u001B[0m"
+    const val GREEN = "\u001B[32m"
+    const val RED = "\u001B[31m"
+    const val RESET = "\u001B[0m"
 
     fun stdout(message: String) {
         println(message)
