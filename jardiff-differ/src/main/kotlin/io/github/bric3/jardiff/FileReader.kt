@@ -11,10 +11,6 @@
 package io.github.bric3.jardiff
 
 import org.apache.tika.parser.txt.CharsetDetector
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.Opcodes
-import org.objectweb.asm.util.Textifier
-import org.objectweb.asm.util.TraceClassVisitor
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.io.PrintWriter
@@ -25,10 +21,10 @@ import kotlin.io.path.extension
 
 object FileReader {
     fun readFileAsTextIfPossible(
-        fileLines: FileLines?,
+        fileAccess: FileAccess?,
         additionalClassExtensions: Set<String> = emptySet()
     ): List<String> {
-        if (fileLines == null) {
+        if (fileAccess == null) {
             return emptyList()
         }
 
@@ -38,9 +34,9 @@ object FileReader {
         // * is class file?
         // * is text file?
         // * is other binary file? then limit to checksum
-        fileLines.bufferedInputStream.use {
+        fileAccess.bufferedInputStream.use {
             return runCatching {
-                val strings = when (fileLines.relativePath.extension) {
+                val strings = when (fileAccess.relativePath.extension) {
                     in classExtensions -> asmTextifier(it)
                     else -> {
                         // detect charset
@@ -77,24 +73,6 @@ object FileReader {
         return StringWriter().use { writer ->
             AnyInputStreamTextifier().textify(PrintWriter(writer), inputStream)
             writer.toString().lines()
-        }
-    }
-
-    private class AnyInputStreamTextifier : Textifier(Opcodes.ASM9) {
-        /**
-         * Directly replace [Textifier.main] / [org.objectweb.asm.util.Printer.main] to read from [InputStream].
-         *
-         * Closes the [inputStream] when done.
-         */
-        fun textify(output: PrintWriter, inputStream: InputStream, noDebug: Boolean = false) {
-            val traceClassVisitor = TraceClassVisitor(null, output)
-
-            inputStream.use {
-                ClassReader(it).accept(
-                    traceClassVisitor,
-                    if (noDebug) ClassReader.SKIP_DEBUG else 0
-                )
-            }
         }
     }
 }

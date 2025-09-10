@@ -12,7 +12,7 @@ package io.github.bric3.jardiff
 
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
-import java.io.BufferedInputStream
+import io.github.bric3.jardiff.FileReader.readFileAsTextIfPossible
 import java.io.Closeable
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -34,8 +34,8 @@ class Differ(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = FileReader.readFileAsTextIfPossible(it.left, addtionalClassExtensions)
-            val rightLines = FileReader.readFileAsTextIfPossible(it.right, addtionalClassExtensions)
+            val leftLines = readFileAsTextIfPossible(it.left, addtionalClassExtensions)
+            val rightLines = readFileAsTextIfPossible(it.right, addtionalClassExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
@@ -60,8 +60,8 @@ class Differ(
     }
 
     private fun makeListOfFilesToDiff(
-        leftEntries: Map<Path, FileLines>,
-        rightEntries: Map<Path, FileLines>
+        leftEntries: Map<Path, FileAccess>,
+        rightEntries: Map<Path, FileAccess>
     ): List<FileEntryToDiff> {
         val allKeys = (leftEntries + rightEntries).keys
         val changes = buildList {
@@ -72,7 +72,7 @@ class Differ(
         return changes
     }
 
-    private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileLines> {
+    private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileAccess> {
         val pathFilter = pathFilter()
         return when (pathToDiff) {
             is PathToDiff.Jar -> {
@@ -81,21 +81,21 @@ class Differ(
                 }
                 jf.entries().asSequence()
                     .filter { it.isDirectory.not() }
-                    .map { FileLines.FromJar(pathToDiff.path, Path.of(it.name), jf) }
+                    .map { FileAccess.FromJar(pathToDiff.path, Path.of(it.name), jf) }
                     .filter(pathFilter)
                     .associateBy { it.relativePath }
             }
             is PathToDiff.Directory -> {
                 Files.walk(pathToDiff.path).asSequence()
                     .filter { Files.isRegularFile(it) }
-                    .map { FileLines.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
+                    .map { FileAccess.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
                     .filter(pathFilter)
                     .associateBy { it.relativePath }
             }
         }
     }
 
-    private fun pathFilter(): (FileLines) -> Boolean {
+    private fun pathFilter(): (FileAccess) -> Boolean {
         val fileSystem = FileSystems.getDefault()
         val excludeMatchers = excludes.map {
             fileSystem.getPathMatcher("glob:$it")
@@ -121,54 +121,9 @@ class Differ(
             }
         }
     }
-}
-
-data class FileEntryToDiff(
-    val path: Path,
-    val left: FileLines?,
-    val right: FileLines?,
-)
-
-sealed class FileLines(
-    val parentPath: Path,
-    val relativePath: Path,
-) : Comparable<FileLines> {
-    abstract val bufferedInputStream: BufferedInputStream
-    override fun compareTo(other: FileLines): Int {
-        return relativePath.compareTo(other.relativePath)
-    }
-
-    class FromJar(
-        parentPath: Path,
-        relativePath: Path,
-        private val jarFile: JarFile
-    ) : FileLines(parentPath, relativePath) {
-        override val bufferedInputStream: BufferedInputStream by lazy {
-            jarFile.getInputStream(jarFile.getEntry(relativePath.toString())).buffered()
-        }
-    }
-
-    class FromDirectory(
-        parentPath: Path,
-        relativePath: Path
-    ) : FileLines(parentPath, relativePath) {
-        override val bufferedInputStream: BufferedInputStream by lazy {
-            Files.newInputStream(parentPath.resolve(relativePath)).buffered()
-        }
-    }
-}
-
-sealed class PathToDiff(val leftOrRight: LeftOrRight, val path: Path) {
-    enum class LeftOrRight { LEFT, RIGHT }
-
-    class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
-    class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
-
-    companion object {
-        fun of(leftOrRight: LeftOrRight, path: Path): PathToDiff = when {
-            Files.isDirectory(path) -> Directory(leftOrRight, path)
-            path.toString().endsWith(".jar", ignoreCase = true) -> Jar(leftOrRight, path)
-            else -> throw IllegalArgumentException("Unsupported file type: $path")
-        }
-    }
+    data class FileEntryToDiff(
+        val path: Path,
+        val left: FileAccess?,
+        val right: FileAccess?,
+    )
 }
