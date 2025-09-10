@@ -25,16 +25,14 @@ include(
 )
 
 develocity {
-    val gradleStartParameter = gradle.startParameter
-
+    val isCI = providers.environmentVariable("CI").isPresent
+    val isIJSync = providers.systemProperty("idea.sync.active").filter { it.toBoolean() }.isPresent
     buildScan {
-        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
-        termsOfUseAgree.set("yes")
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfUseAgree = "yes"
         publishing {
             onlyIf {
-                (System.getenv("CI") != null) or
-                        it.buildResult.failures.isNotEmpty() or
-                        gradleStartParameter.isBuildScan
+                isCI or isIJSync or it.buildResult.failures.isNotEmpty()
             }
         }
     }
