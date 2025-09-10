@@ -25,8 +25,17 @@ include(
 )
 
 develocity {
+    val gradleStartParameter = gradle.startParameter
+
     buildScan {
         termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
         termsOfUseAgree.set("yes")
+        publishing {
+            onlyIf {
+                (System.getenv("CI") != null) or
+                        it.buildResult.failures.isNotEmpty() or
+                        gradleStartParameter.isBuildScan
+            }
+        }
     }
 }
