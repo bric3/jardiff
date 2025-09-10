@@ -38,7 +38,7 @@ object FileReader {
         // * is other binary file? then limit to checksum
         fileLines.bufferedInputStream.use {
             return runCatching {
-                when (fileLines.relativePath.extension) {
+                val strings = when (fileLines.relativePath.extension) {
                     in classExtensions -> asmTextifier(it)
                     else -> {
                         // detect charset
@@ -47,6 +47,7 @@ object FileReader {
                         it.reader(Charset.forName(match.name)).readLines()
                     }
                 }
+                strings
             }.recoverCatching { _ ->
                 binaryToText(it)
             }.getOrDefault(emptyList())
@@ -72,10 +73,9 @@ object FileReader {
 
     private fun asmTextifier(inputStream: InputStream): List<String> {
         return StringWriter().use { writer ->
-            inputStream.use {
-                AnyInputStreamTextifier().textify(PrintWriter(writer), it)
-            }
-        }.toString().lines()
+            AnyInputStreamTextifier().textify(PrintWriter(writer), inputStream)
+            writer.toString().lines()
+        }
     }
 
     private class AnyInputStreamTextifier : Textifier(Opcodes.ASM9) {
