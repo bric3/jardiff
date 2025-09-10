@@ -8,33 +8,54 @@ Jardiff is a command-line tool for comparing the contents of JAR files and direc
 * Line-based diffs for each files
 * Class file comparison using ASM's Textify
 * Binary diff as sha-1 hashes 
+* Exclude glob patterns (for the relative paths inside the jars/directories)
 
-  _(fallback mechnism, for non class-files, non-decoded text files)_
+  _(fallback mechanism, for non class-files, non-decoded text files)_
 
 Unsupported at this time, if ever...
-* Filter patterns to include/exclude paths
 * Nested jars
+* Include glob patterns
 * More advanced binary diffs, i.e. showing bytes differences.
 
   _This one is unlikely_
 
 ## Usage
 
-Currently, the tool is not packaged so one need to run it via Gradle:
+Build it `./gradlew build`, then run it:
 
-```sh
-./gradlew run --args="<left> <right>"
+```shell
+$ java -jar jardiff/build/shadowed-app/jardiff-0.1.0-SNAPSHOT.jar -h
+Usage: jardiff [-hV] [--class-file-extensions=<extension>[,<extension>...]]...
+               [-e=<glob>]... <left> <right>
+Compares two JAR files or directories and reports differences.
+      <left>             The JAR file or directory to compare.
+      <right>            The JAR file or directory to compare.
+      --class-file-extensions=<extension>[,<extension>...]
+                         A comma separated list of class file extension, e.g.
+                          'classdata' or 'raw,bin,clazz'
+  -e, --exclude=<glob>   A glob exclude pattern, e.g.
+                         '**/raw*/**', or '**/*.bin'
+  -h, --help             Show this help message and exit.
+  -V, --version          Print version information and exit.
 ```
 
-- `<left>` and `<right>` can be paths to JAR files or directories.
+
+
+Also, you can run it from gradle:
+
+```shell
+$ ./gradlew run --args="{left} {right}"
+```
+
+- `{left}` and `{right}` can be paths to JAR files or directories.
 - The tool outputs a summary and detailed diff of all differing files.
 
 ## Building
 
 To build the project:
 
-```sh
-./gradlew build
+```shell
+$ ./gradlew build
 ```
 
 ## Dependencies

@@ -29,17 +29,22 @@ import kotlin.system.exitProcess
 )
 class Main : Runnable {
     @Parameters(
-        arity = "2",
-        paramLabel = "<left> <right>",
+        index = "0",
         description = ["The JAR file or directory to compare."]
     )
-    lateinit var files: List<String>
+    lateinit var left: String
+
+    @Parameters(
+        index = "1",
+        description = ["The JAR file or directory to compare."]
+    )
+    lateinit var right: String
 
     @Option(
         names = ["-e", "--exclude"],
         arity = "1",
         paramLabel = "<glob>",
-        description = ["A glob exclude pattern, e.g. '**/raw*/**', or '**/*.bin'"],
+        description = ["A glob exclude pattern, e.g. ", "'**/raw*/**', or '**/*.bin'"],
         defaultValue = ""
     )
     lateinit var excludes: Set<String>
@@ -47,16 +52,19 @@ class Main : Runnable {
     @Option(
         names = ["--class-file-extensions"],
         arity = "1",
-        paramLabel = "<class file extension>",
-        description = ["A comma separated list of class file extension, e.g. 'classdata' or 'raw,bin,clazz'"],
+        paramLabel = "<extension>",
+        description = [
+            "A comma separated list of class file extension, e.g.",
+            " 'classdata' or 'raw,bin,clazz'"
+        ],
         split = ",",
         defaultValue = ""
     )
     lateinit var additionalClassExtensions: Set<String>
 
     override fun run() {
-        val left = PathToDiff.of(LEFT, makePath(files[0]))
-        val right = PathToDiff.of(RIGHT, makePath(files[1]))
+        val left = PathToDiff.of(LEFT, makePath(left))
+        val right = PathToDiff.of(RIGHT, makePath(right))
 
         Logger.stdout(
             """
@@ -83,7 +91,7 @@ class Main : Runnable {
             exitProcess(CommandLine(Main()).execute(*args))
         }
 
-        fun makePath(it: String) : Path = Path.of(it).also {
+        fun makePath(it: String): Path = Path.of(it).also {
             if (Files.exists(it).not()) {
                 Logger.stderr("File or directory does not exist: $it")
                 exitProcess(1)
