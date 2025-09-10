@@ -93,6 +93,11 @@ Compares two JAR files or directories and reports differences.
   -V, --version          Print version information and exit.
 ```
 
+> [!TIP]
+> Use shell features, e.g. in Bash, ZSH instead of typing twice long folders use the [brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html#Brace-Expansion-1) :
+> ```shell
+> $ java -jar jardiff-0.1.0-SNAPSHOT.jar /Users/brice.dutheil/path/to/repositories/project{-original,-with-changes}/submodule/submodule/submodule/build/classes/java/main
+> ```
 
 
 Also, you can run it from gradle:
