@@ -16,8 +16,7 @@ import io.github.bric3.jardiff.PathToDiff
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
 import picocli.CommandLine
-import picocli.CommandLine.Command
-import picocli.CommandLine.Parameters
+import picocli.CommandLine.*
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.exitProcess
@@ -29,7 +28,11 @@ import kotlin.system.exitProcess
     description = ["Compares two JAR files or directories and reports differences."]
 )
 class Main : Runnable {
-    @Parameters(arity = "2", paramLabel = "<left> <right>", description = ["The JAR or directory to compare."])
+    @Parameters(
+        arity = "2",
+        paramLabel = "<left> <right>",
+        description = ["The JAR file or directory to compare."]
+    )
     lateinit var files: List<String>
 
     override fun run() {
@@ -45,7 +48,10 @@ class Main : Runnable {
             """.trimIndent()
         )
 
-        Differ(left = left, right = right).use {
+        Differ(
+            left = left,
+            right = right,
+        ).use {
             it.diff()
         }
     }

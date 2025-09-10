@@ -14,22 +14,23 @@ import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import java.io.BufferedInputStream
 import java.io.Closeable
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.function.Consumer
+import java.util.function.Predicate
 import java.util.jar.JarFile
 import kotlin.streams.asSequence
 
 class Differ(
-    val left: PathToDiff,
-    val right: PathToDiff,
-    private val classExtensions: List<String> = listOf("class")
+    private val left: PathToDiff,
+    private val right: PathToDiff,
+    private val classExtensions: List<String> = listOf("class"),
 ) : AutoCloseable {
-    private val childCloseables = mutableListOf<Closeable>()
+    private val childCloseables = mutableSetOf<Closeable>()
 
     fun diff() {
-        val leftEntries = left.fileEntries(childCloseables::add)
-        val rightEntries = right.fileEntries(childCloseables::add)
+        val leftEntries = fileEntries(left)
+        val rightEntries = fileEntries(right)
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
@@ -60,7 +61,10 @@ class Differ(
         }
     }
 
-    private fun makeListOfFilesToDiff(leftEntries: Map<Path, FileLines>, rightEntries: Map<Path, FileLines>): List<FileEntryToDiff> {
+    private fun makeListOfFilesToDiff(
+        leftEntries: Map<Path, FileLines>,
+        rightEntries: Map<Path, FileLines>
+    ): List<FileEntryToDiff> {
         val allKeys = (leftEntries + rightEntries).keys
         val changes = buildList {
             allKeys.forEach {
@@ -68,6 +72,26 @@ class Differ(
             }
         }
         return changes
+    }
+
+    private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileLines> {
+        return when (pathToDiff) {
+            is PathToDiff.Jar -> {
+                val jf = JarFile(pathToDiff.path.toFile()).also {
+                    childCloseables.add(it)
+                }
+                jf.entries().asSequence()
+                    .filter { it.isDirectory.not() }
+                    .map { FileLines.FromJar(pathToDiff.path, Path.of(it.name), jf) }
+                    .associateBy { it.relativePath }
+            }
+            is PathToDiff.Directory -> {
+                Files.walk(pathToDiff.path).asSequence()
+                    .filter { Files.isRegularFile(it) }
+                    .map { FileLines.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
+                    .associateBy { it.relativePath }
+            }
+        }
     }
 
     override fun close() {
@@ -95,12 +119,21 @@ sealed class FileLines(
     override fun compareTo(other: FileLines): Int {
         return relativePath.compareTo(other.relativePath)
     }
-    class FromJar(parentPath: Path, relativePath: Path, private val jarFile: JarFile) : FileLines(parentPath, relativePath) {
+
+    class FromJar(
+        parentPath: Path,
+        relativePath: Path,
+        private val jarFile: JarFile
+    ) : FileLines(parentPath, relativePath) {
         override val bufferedInputStream: BufferedInputStream by lazy {
             jarFile.getInputStream(jarFile.getEntry(relativePath.toString())).buffered()
         }
     }
-    class FromDirectory(parentPath: Path, relativePath: Path) : FileLines(parentPath, relativePath) {
+
+    class FromDirectory(
+        parentPath: Path,
+        relativePath: Path
+    ) : FileLines(parentPath, relativePath) {
         override val bufferedInputStream: BufferedInputStream by lazy {
             Files.newInputStream(parentPath.resolve(relativePath)).buffered()
         }
@@ -109,27 +142,9 @@ sealed class FileLines(
 
 sealed class PathToDiff(val leftOrRight: LeftOrRight, val path: Path) {
     enum class LeftOrRight { LEFT, RIGHT }
-    abstract fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines>
-    class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
-        override fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines> {
-            val jf = JarFile(path.toFile()).also {
-                closeable.accept(it)
-            }
-            return jf.entries().asSequence()
-                .filter { it.isDirectory.not() }
-                .map { FileLines.FromJar(path, Path.of(it.name), jf) }
-                .associateBy { it.relativePath }
-        }
-    }
 
-    class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
-        override fun fileEntries(closeable: Consumer<Closeable>): Map<Path, FileLines> {
-            return Files.walk(path).asSequence()
-                .filter { Files.isRegularFile(it) }
-                .map { FileLines.FromDirectory(path, path.relativize(it)) }
-                .associateBy { it.relativePath }
-        }
-    }
+    class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
+    class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
 
     companion object {
         fun of(leftOrRight: LeftOrRight, path: Path): PathToDiff = when {
