@@ -27,24 +27,19 @@ object FileReader {
         // * is text file?
         // * is other binary file? then limit to checksum
         fileLines.bufferedInputStream.use {
-            // detect charset
-            // if confidence is low, then assume binary
-            val detector = CharsetDetector().setText(it)
-            val match = detector.detect()
-            if (match.confidence > 80) {
-                return it.reader(Charset.forName(match.name)).readLines()
-            }
-
-            // is it a class file?
-            if (fileLines.relativePath.extension in classExtensions) {
-                return kotlin.runCatching {
-                    asmTextifier(it)
-                }.getOrElse { t ->
-                    binaryToText(it)
+            return runCatching {
+                when (fileLines.relativePath.extension) {
+                    in classExtensions -> asmTextifier(it)
+                    else -> {
+                        // detect charset
+                        val detector = CharsetDetector().setText(it)
+                        val match = detector.detect()
+                        it.reader(Charset.forName(match.name)).readLines()
+                    }
                 }
-            }
-
-            return binaryToText(it)
+            }.recoverCatching { _ ->
+                binaryToText(it)
+            }.getOrDefault(emptyList())
         }
     }
 

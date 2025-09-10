@@ -21,10 +21,8 @@ class Differ(
         val leftEntries = left.fileEntries(childCloseables::add)
         val rightEntries = right.fileEntries(childCloseables::add)
 
-        // leftLines or rightLines may not be symmetric
-        val listOfFilesToDiff = makeListOfFilesToDiff(leftEntries, rightEntries)
-
-        listOfFilesToDiff.forEach {
+        // leftEntries and rightEntries may not be symmetric
+        makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
             val leftLines = FileReader.readFileAsTextIfPossible(it.left, classExtensions)
             val rightLines = FileReader.readFileAsTextIfPossible(it.right, classExtensions)
 
