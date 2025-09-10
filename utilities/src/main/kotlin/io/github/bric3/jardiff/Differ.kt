@@ -9,17 +9,18 @@ import kotlin.streams.asSequence
 class Differ(
     val left: PathToDiff,
     val right: PathToDiff,
+    private val classExtensions: List<String> = listOf("class")
 ) {
     fun diff() {
-        val leftEntries = lineStream(left)
-        val rightEntries = lineStream(right)
+        val leftEntries = left.fileEntries()
+        val rightEntries = right.fileEntries()
 
         // leftLines or rightLines may not be symmetric
         val listOfFilesToDiff = makeListOfFilesToDiff(leftEntries, rightEntries)
 
         listOfFilesToDiff.forEach {
-            val leftLines = FileReader.readFileAsTextIfPossible(it.left)
-            val rightLines = FileReader.readFileAsTextIfPossible(it.right)
+            val leftLines = FileReader.readFileAsTextIfPossible(it.left, classExtensions)
+            val rightLines = FileReader.readFileAsTextIfPossible(it.right, classExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
@@ -40,36 +41,19 @@ class Differ(
                     Logger.stdout(line)
                 }
             } else {
-                Logger.stdout(
-                    "${Logger.GREEN}✔${Logger.RESET}️ ${it.path}"
-                )
+                Logger.stdout("${Logger.GREEN}✔${Logger.RESET}️ ${it.path}")
             }
         }
     }
 
     private fun makeListOfFilesToDiff(leftEntries: Map<Path, FileLines>, rightEntries: Map<Path, FileLines>): List<FileEntryToDiff> {
         val allKeys = (leftEntries + rightEntries).keys
-        val changes = buildList<FileEntryToDiff> {
+        val changes = buildList {
             allKeys.forEach {
                 add(FileEntryToDiff(it, leftEntries.get(it), rightEntries.get(it)))
             }
         }
         return changes
-    }
-
-    companion object {
-        private fun readDirectoryEntries(path: Path): Map<Path, FileLines> =
-            Files.walk(path).asSequence()
-                .filter { Files.isRegularFile(it) }
-                .map { FileLines(path, path.relativize(it)) }
-                .associateBy { it.relativePath }
-
-        private fun lineStream(pathToDiff: PathToDiff): Map<Path, FileLines> {
-            return when (pathToDiff) {
-                is PathToDiff.Jar -> TODO("JarUtils.readJarEntries(left.path)")
-                is PathToDiff.Directory -> readDirectoryEntries(pathToDiff.path)
-            }
-        }
     }
 }
 
@@ -92,16 +76,27 @@ data class FileLines(
 
 sealed class PathToDiff(val leftOrRight: LeftOrRight, val path: Path) {
     enum class LeftOrRight { LEFT, RIGHT }
+    abstract fun fileEntries(): Map<Path, FileLines>
+    class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
+        override fun fileEntries(): Map<Path, FileLines> {
+            TODO("Not yet implemented: JarUtils.readJarEntries(left.path)")
+        }
+    }
 
-    class Jar(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
-    class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path)
+    class Directory(leftOrRight: LeftOrRight, path: Path) : PathToDiff(leftOrRight, path) {
+        override fun fileEntries(): Map<Path, FileLines> {
+            return Files.walk(path).asSequence()
+                .filter { Files.isRegularFile(it) }
+                .map { FileLines(path, path.relativize(it)) }
+                .associateBy { it.relativePath }
+        }
+    }
+
     companion object {
-        fun of(leftOrRight: LeftOrRight, path: Path): PathToDiff {
-            return when {
-                Files.isDirectory(path) -> Directory(leftOrRight, path)
-                path.toString().endsWith(".jar", ignoreCase = true) -> Jar(leftOrRight, path)
-                else -> throw IllegalArgumentException("Unsupported file type: $path")
-            }
+        fun of(leftOrRight: LeftOrRight, path: Path): PathToDiff = when {
+            Files.isDirectory(path) -> Directory(leftOrRight, path)
+            path.toString().endsWith(".jar", ignoreCase = true) -> Jar(leftOrRight, path)
+            else -> throw IllegalArgumentException("Unsupported file type: $path")
         }
     }
 }
