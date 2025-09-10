@@ -14,8 +14,6 @@ plugins {
     id("com.gradleup.shadow")
 }
 
-
-
 tasks {
     shadowJar {
         archiveBaseName = project.name
@@ -33,6 +31,13 @@ tasks {
         enabled = false
     }
     distZip {
+        enabled = false
+    }
+    // Disable app distribution tasks as well
+    shadowDistTar {
+        enabled = false
+    }
+    shadowDistZip {
         enabled = false
     }
 }

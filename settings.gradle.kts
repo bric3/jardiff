@@ -19,7 +19,10 @@ plugins {
 
 rootProject.name = "jardiff"
 
-include("app", "utilities")
+include(
+    "jardiff",
+    "jardiff-differ"
+)
 
 develocity {
     buildScan {

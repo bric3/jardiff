@@ -13,7 +13,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":utilities"))
+    implementation(project(":jardiff-differ"))
     implementation(libs.picocli)
 }
 
