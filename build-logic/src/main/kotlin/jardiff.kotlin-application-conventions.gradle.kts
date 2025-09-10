@@ -9,7 +9,7 @@
  */
 
 plugins {
-    id("buildlogic.kotlin-common-conventions")
+    id("jardiff.kotlin-common-conventions")
     application
     id("com.gradleup.shadow")
 }

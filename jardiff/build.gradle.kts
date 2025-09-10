@@ -9,7 +9,7 @@
  */
 
 plugins {
-    id("buildlogic.kotlin-application-conventions")
+    id("jardiff.kotlin-application-conventions")
 }
 
 dependencies {
