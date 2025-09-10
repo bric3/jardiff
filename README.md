@@ -20,6 +20,12 @@ Unsupported at this time, if ever...
   _This one is unlikely_
 
 ## Usage
+                 
+> [!CAUTION] This tool needs a JDK24 to build and run
+> Example with `mise`
+> ```shell
+> $ mise exec java@corretto-24 -- java -jar jardiff-0.1.0-SNAPSHOT.jar
+> ```
 
 Build it `./gradlew build`, then run it:
 
