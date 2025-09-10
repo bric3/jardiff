@@ -26,12 +26,14 @@ import kotlin.io.path.extension
 object FileReader {
     fun readFileAsTextIfPossible(
         fileLines: FileLines?,
-        classExtensions: List<String> = listOf("class")
+        additionalClassExtensions: Set<String> = emptySet()
     ): List<String> {
         if (fileLines == null) {
             return emptyList()
         }
-        
+
+        val classExtensions = additionalClassExtensions + "class"
+
         // need to handle
         // * is class file?
         // * is text file?

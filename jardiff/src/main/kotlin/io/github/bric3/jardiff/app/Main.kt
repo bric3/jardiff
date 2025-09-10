@@ -39,10 +39,20 @@ class Main : Runnable {
         names = ["-e", "--exclude"],
         arity = "1",
         paramLabel = "<glob>",
-        description = ["A glob exclude pattern, like **/raw*/**, or **/*.bin"],
+        description = ["A glob exclude pattern, e.g. '**/raw*/**', or '**/*.bin'"],
         defaultValue = ""
     )
     lateinit var excludes: Set<String>
+
+    @Option(
+        names = ["--class-file-extensions"],
+        arity = "1",
+        paramLabel = "<class file extension>",
+        description = ["A comma separated list of class file extension, e.g. 'classdata' or 'raw,bin,clazz'"],
+        split = ",",
+        defaultValue = ""
+    )
+    lateinit var additionalClassExtensions: Set<String>
 
     override fun run() {
         val left = PathToDiff.of(LEFT, makePath(files[0]))
@@ -60,7 +70,8 @@ class Main : Runnable {
         Differ(
             left = left,
             right = right,
-            excludes = excludes
+            excludes = excludes,
+            addtionalClassExtensions = additionalClassExtensions
         ).use {
             it.diff()
         }

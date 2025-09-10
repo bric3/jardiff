@@ -17,7 +17,6 @@ import java.io.Closeable
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.function.Predicate
 import java.util.jar.JarFile
 import kotlin.streams.asSequence
 
@@ -25,7 +24,7 @@ class Differ(
     private val left: PathToDiff,
     private val right: PathToDiff,
     private val excludes: Set<String>,
-    private val classExtensions: List<String> = listOf("class"),
+    private val addtionalClassExtensions: Set<String> = emptySet(),
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
 
@@ -35,8 +34,8 @@ class Differ(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = FileReader.readFileAsTextIfPossible(it.left, classExtensions)
-            val rightLines = FileReader.readFileAsTextIfPossible(it.right, classExtensions)
+            val leftLines = FileReader.readFileAsTextIfPossible(it.left, addtionalClassExtensions)
+            val rightLines = FileReader.readFileAsTextIfPossible(it.right, addtionalClassExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
