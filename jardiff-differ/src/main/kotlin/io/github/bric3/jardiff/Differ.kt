@@ -24,6 +24,7 @@ import kotlin.streams.asSequence
 class Differ(
     private val left: PathToDiff,
     private val right: PathToDiff,
+    private val excludes: Set<String>,
     private val classExtensions: List<String> = listOf("class"),
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
@@ -51,10 +52,8 @@ class Differ(
             )
 
             if (unifiedDiff.size > 0) {
-                Logger.stdout("${Logger.RED}⨯${Logger.RESET}\uFE0F ${it.path}")
-                unifiedDiff.forEach { line ->
-                    Logger.stdout(line)
-                }
+                Logger.stdout("${Logger.RED}⨯${Logger.RESET} ${it.path}")
+                unifiedDiff.forEach(Logger::stdout)
             } else {
                 Logger.stdout("${Logger.GREEN}✔${Logger.RESET}️ ${it.path}")
             }
@@ -68,13 +67,14 @@ class Differ(
         val allKeys = (leftEntries + rightEntries).keys
         val changes = buildList {
             allKeys.forEach {
-                add(FileEntryToDiff(it, leftEntries.get(it), rightEntries.get(it)))
+                add(FileEntryToDiff(it, leftEntries[it], rightEntries[it]))
             }
         }
         return changes
     }
 
     private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileLines> {
+        val pathFilter = pathFilter()
         return when (pathToDiff) {
             is PathToDiff.Jar -> {
                 val jf = JarFile(pathToDiff.path.toFile()).also {
@@ -83,13 +83,32 @@ class Differ(
                 jf.entries().asSequence()
                     .filter { it.isDirectory.not() }
                     .map { FileLines.FromJar(pathToDiff.path, Path.of(it.name), jf) }
+                    .filter(pathFilter)
                     .associateBy { it.relativePath }
             }
             is PathToDiff.Directory -> {
                 Files.walk(pathToDiff.path).asSequence()
                     .filter { Files.isRegularFile(it) }
                     .map { FileLines.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
+                    .filter(pathFilter)
                     .associateBy { it.relativePath }
+            }
+        }
+    }
+
+    private fun pathFilter(): (FileLines) -> Boolean {
+        val fileSystem = FileSystems.getDefault()
+        val excludeMatchers = excludes.map {
+            fileSystem.getPathMatcher("glob:$it")
+        }
+
+        return { file ->
+            excludeMatchers.none {
+                it.matches(file.relativePath)
+            }.also { accepted ->
+                if (!accepted) {
+                    Logger.verbose("Excluded: ${file.relativePath}")
+                }
             }
         }
     }

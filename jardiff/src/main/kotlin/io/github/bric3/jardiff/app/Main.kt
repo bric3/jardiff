@@ -35,6 +35,15 @@ class Main : Runnable {
     )
     lateinit var files: List<String>
 
+    @Option(
+        names = ["-e", "--exclude"],
+        arity = "1",
+        paramLabel = "<glob>",
+        description = ["A glob exclude pattern, like **/raw*/**, or **/*.bin"],
+        defaultValue = ""
+    )
+    lateinit var excludes: Set<String>
+
     override fun run() {
         val left = PathToDiff.of(LEFT, makePath(files[0]))
         val right = PathToDiff.of(RIGHT, makePath(files[1]))
@@ -51,6 +60,7 @@ class Main : Runnable {
         Differ(
             left = left,
             right = right,
+            excludes = excludes
         ).use {
             it.diff()
         }

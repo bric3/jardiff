@@ -15,10 +15,23 @@ object Logger {
     const val RED = "\u001B[31m"
     const val RESET = "\u001B[0m"
 
+    private val isDebugging by lazy {
+        ProcessHandle.current().info()
+            .arguments().map { args ->
+                args.any { it.startsWith("-agentlib:jdwp") }
+            }.get()
+    }
+
     fun stdout(message: String) {
         println(message)
     }
     fun stderr(message: String) {
         System.err.println(message)
+    }
+
+    fun verbose(msg: String) {
+        if (isDebugging) {
+            stdout(msg)
+        }
     }
 }
