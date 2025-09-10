@@ -26,7 +26,7 @@ include(
 
 develocity {
     buildScan {
-        termsOfUseAgree.set("https://gradle.com/terms-of-service")
+        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
         termsOfUseAgree.set("yes")
     }
 }
