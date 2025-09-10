@@ -1,5 +1,6 @@
 package io.github.bric3.jardiff
 
+import org.apache.tika.parser.txt.CharsetDetector
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.util.Textifier
@@ -8,6 +9,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.nio.charset.Charset
 import java.security.MessageDigest
 import kotlin.io.path.extension
 
@@ -22,15 +24,22 @@ object FileReader {
         // * is text file?
         // * is other binary file? then limit to checksum
         if (fileLines.relativePath.extension == "class") {
-            return asmTextifier(fileLines.inputStream)
+            return asmTextifier(fileLines.bufferedInputStream)
         }
 
-        try {
-            // Only handles UTF-8 at this time
-            return fileLines.lines
-        } catch (e: IOException) {
-            // If this fails resort to hash
-            return listOf("BINARY FILE SHA-1: ${sha1Hex(fileLines.inputStream)}")
+        return fileLines.bufferedInputStream.use {
+            // detect charset
+            // if confidence is low, then assume binary
+            val detector = CharsetDetector().setText(it)
+            val match = detector.detect()
+            if (match.confidence > 80) {
+                it.reader(Charset.forName(match.name)).readLines()
+            } else {
+                // For now just return the sha1 of the binary file
+                // Next show binary diff? E.g.
+                //  │00000000│ 23 21 2f 62 69 6e 2f 73 ┊ 68 0a 0a 23 0a 23 20 43 │#!/bin/s┊h__#_# C│
+                return listOf("BINARY FILE SHA-1: ${sha1Hex(fileLines.bufferedInputStream)}")
+            }
         }
     }
 

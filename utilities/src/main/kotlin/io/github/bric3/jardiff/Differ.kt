@@ -4,7 +4,6 @@ import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.random.Random
 import kotlin.streams.asSequence
 
 class Differ(
@@ -85,7 +84,7 @@ data class FileLines(
     val relativePath: Path,
 ) : Comparable<FileLines> {
     val lines by lazy { Files.readAllLines(parentPath.resolve(relativePath)) }
-    val inputStream by lazy { Files.newInputStream(parentPath.resolve(relativePath)).buffered() }
+    val bufferedInputStream by lazy { Files.newInputStream(parentPath.resolve(relativePath)).buffered() }
     override fun compareTo(other: FileLines): Int {
         return relativePath.compareTo(other.relativePath)
     }

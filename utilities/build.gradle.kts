@@ -5,4 +5,5 @@ plugins {
 dependencies {
     implementation(libs.bundles.asm)
     implementation(libs.javadiffutils)
+    implementation(libs.tika)
 }

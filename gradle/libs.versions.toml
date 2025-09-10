@@ -4,6 +4,7 @@ picocli = "4.7.7"
 asm = "9.8"
 javadiffutils = "4.15"
 bytebuddyagent = "1.17.7"
+tikka = "3.2.2"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
@@ -13,6 +14,7 @@ asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 javadiffutils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "javadiffutils" }
 bytebuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddyagent" }
 bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddyagent" }
+tika = { module = "org.apache.tika:tika-parser-text-module", version.ref = "tikka" }
 
 [bundles]
 asm = ["asm", "asm-util"]
