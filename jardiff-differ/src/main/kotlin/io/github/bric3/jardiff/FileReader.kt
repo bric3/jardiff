@@ -36,16 +36,19 @@ object FileReader {
         // * is other binary file? then limit to checksum
         fileAccess.bufferedInputStream.use {
             return runCatching {
-                val strings = when (fileAccess.relativePath.extension) {
-                    in classExtensions -> asmTextifier(it)
+                when (fileAccess.relativePath.extension) {
+                    in classExtensions -> Result.success(asmTextifier(it))
                     else -> {
                         // detect charset
                         val detector = CharsetDetector().setText(it)
                         val match = detector.detect()
-                        it.reader(Charset.forName(match.name)).readLines()
+                        if (match.confidence > 40) {
+                            Result.success(it.reader(Charset.forName(match.name)).readLines())
+                        } else {
+                            Result.failure(Exception("Unexpected character detected"))
+                        }
                     }
                 }
-                strings
             }.recoverCatching { _ ->
                 binaryToText(it)
             }.getOrDefault(emptyList())
@@ -73,6 +76,17 @@ object FileReader {
         return StringWriter().use { writer ->
             AnyInputStreamTextifier.textify(writer, inputStream)
             writer.toString().lines()
+        }
+    }
+
+    /**
+     * Similar to [runCatching], but take a block to return a Result instead
+     */
+    public inline fun <T, R> T.runCatching(block: T.() -> Result<R>): Result<R> {
+        return try {
+            block()
+        } catch (e: Throwable) {
+            Result.failure(e)
         }
     }
 }
