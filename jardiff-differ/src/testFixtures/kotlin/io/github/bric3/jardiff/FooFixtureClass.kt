@@ -8,13 +8,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-plugins {
-    id("jardiff.kotlin-library-conventions")
-    `java-test-fixtures`
-}
+package io.github.bric3.jardiff
 
-dependencies {
-    implementation(libs.bundles.asm)
-    implementation(libs.javadiffutils)
-    implementation(libs.tika)
+class FooFixtureClass {
+    fun bar() {
+        println("Hello, World!")
+    }
 }
