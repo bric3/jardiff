@@ -12,8 +12,11 @@ package io.github.bric3.jardiff
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.jar.JarFile
+import kotlin.random.Random
 
 class FileReaderTest {
     @Test
@@ -31,6 +34,22 @@ class FileReaderTest {
         val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess)
 
         assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
+    }
+
+    @Test
+    fun `should return a hash of binary files`(@TempDir tempDir: Path) {
+        val binaryFile = Path.of("file.bin")
+        Files.write(
+            tempDir.resolve(binaryFile),
+            // make the beginning not random, this is the beggining of a Matroska header
+            ubyteArrayOf(0x1Au, 0x45u, 0xDFu, 0xA3u, 0x42u, 0x86u, 0x42u, 0xF7u, 0x42u, 0xF2u, 0x42u, 0xF3u).asByteArray() +
+                    Random.nextBytes(1048)
+        )
+
+        val fileAccess = FileAccess.FromDirectory(tempDir, binaryFile)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+
+        assertThat(textContent).element(0).asString().matches("BINARY FILE SHA-1: [0-9a-fA-F]{40}")
     }
 
     @Test
