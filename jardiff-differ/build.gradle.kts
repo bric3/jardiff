@@ -18,3 +18,12 @@ dependencies {
     implementation(libs.javadiffutils)
     implementation(libs.tika)
 }
+
+tasks.test {
+    val fixtureJarPath = tasks.testFixturesJar.map { it.archiveFile.get().asFile.absolutePath }
+    val fixturesKotlinClassesPath = sourceSets.testFixtures.map { it.kotlin.classesDirectory.get().asFile.absolutePath }
+    doFirst {
+        systemProperties("text-fixtures.jar.path" to fixtureJarPath.get())
+        systemProperties("text-fixtures.kotlin.classes.path" to fixturesKotlinClassesPath.get())
+    }
+}
