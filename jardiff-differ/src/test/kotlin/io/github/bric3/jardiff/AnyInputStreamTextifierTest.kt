@@ -14,14 +14,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
 import java.io.IOException
-import java.io.PrintWriter
+import java.io.InputStream
 import java.io.StringWriter
 
 class AnyInputStreamTextifierTest {
     @Test
     fun `textify classes by InputStream`() {
         StringWriter().use { writer ->
-            this::class.java.classLoader.getResourceAsStream(FooFixtureClass::class.path).use {
+            fixtureClassInputStream().use {
                 AnyInputStreamTextifier.textify(writer, it)
                 assertThat(writer.toString()).isEqualToIgnoringNewLines(
                     """
@@ -70,7 +70,7 @@ class AnyInputStreamTextifierTest {
     @Test
     fun `textify classes by InputStream with noDebug`() {
         StringWriter().use { writer ->
-            this::class.java.classLoader.getResourceAsStream(FooFixtureClass::class.path).use {
+            fixtureClassInputStream().use {
                 AnyInputStreamTextifier.textify(writer, it, noDebug = true)
                 assertThat(writer.toString()).isEqualToIgnoringNewLines(
                     """
@@ -108,7 +108,7 @@ class AnyInputStreamTextifierTest {
     @Test
     fun `textify fails if InputStream is closed`() {
         StringWriter().use { writer ->
-            this::class.java.classLoader.getResourceAsStream(FooFixtureClass::class.path).use {
+            fixtureClassInputStream().use {
                 it.close()
 
                 assertThatCode { AnyInputStreamTextifier.textify(writer, it, noDebug = true) }
@@ -116,4 +116,7 @@ class AnyInputStreamTextifierTest {
             }
         }
     }
+
+    private fun fixtureClassInputStream(): InputStream =
+        this::class.java.classLoader.getResourceAsStream(FooFixtureClass::class.path)!!.buffered()
 }
