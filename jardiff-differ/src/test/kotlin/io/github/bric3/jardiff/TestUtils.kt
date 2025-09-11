@@ -10,8 +10,6 @@
 
 package io.github.bric3.jardiff
 
-import org.assertj.core.api.Assertions.assertThat
-import sun.tools.jar.resources.jar
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -39,11 +37,19 @@ val KClass<*>.bytes: ByteArray?
         this.java.classLoader.getResourceAsStream(it)?.readAllBytes()
     }
 
+private const val FIXTURES_JAR = "text-fixtures.jar.path"
+private const val FIXTURES_KOTLIN_CLASSES = "text-fixtures.kotlin.classes.path"
+private const val FIXTURES_RESOURCES = "text-fixtures.resources.path"
+
 val fixtureClassesOutput: Path
-    get() = Path.of(System.getProperty("text-fixtures.kotlin.classes.path")).also {
-        require(Files.isDirectory(it)) { "Path in 'text-fixtures.classes.path' must be a directory, got $it" }
+    get() = Path.of(System.getProperty(FIXTURES_KOTLIN_CLASSES)).also {
+        require(Files.isDirectory(it)) { "Path in '$FIXTURES_KOTLIN_CLASSES' must be a directory, got $it" }
+    }
+val fixtureResources: Path
+    get() = Path.of(System.getProperty(FIXTURES_RESOURCES)).also {
+        require(Files.isDirectory(it)) { "Path in '$FIXTURES_RESOURCES' must be a directory, got $it" }
     }
 val fixtureJar: Path
-    get() = Path.of(System.getProperty("text-fixtures.jar.path")).also {
-        require(it.extension == "jar" && Files.isRegularFile(it)) { "Path in 'text-fixtures.jar.path' must be a jar, got $it" }
+    get() = Path.of(System.getProperty(FIXTURES_JAR)).also {
+        require(it.extension == "jar" && Files.isRegularFile(it)) { "Path in '$FIXTURES_JAR' must be a jar, got $it" }
     }
