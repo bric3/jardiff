@@ -12,4 +12,17 @@ plugins {
     // Apply the common convention plugin for shared build configuration between library and application projects.
     id("jardiff.kotlin-common-conventions")
     `java-library`
+    `jvm-test-suite`
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter(libs.versions.junit5)
+
+            dependencies {
+                implementation(libs.assertj.core)
+            }
+        }
+    }
 }
