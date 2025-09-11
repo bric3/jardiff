@@ -18,21 +18,122 @@ import java.util.jar.JarFile
 class FileReaderTest {
     @Test
     fun `should textify class from jar`() {
-        val fileAccess = FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), JarFile(fixtureJar.toFile()))
-        val readFileAsTextIfPossible = FileReader.readFileAsTextIfPossible(fileAccess)
+        val fileAccess =
+            FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), JarFile(fixtureJar.toFile()))
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess)
 
-        assertThat(readFileAsTextIfPossible).containsExactly(*fooFixtureClassLines)
+        assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
 
     @Test
     fun `should textify class from directory`() {
         val fileAccess = FileAccess.FromDirectory(fixtureClassesOutput, Path.of(FooFixtureClass::class.path))
-        val readFileAsTextIfPossible = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess)
 
-        assertThat(readFileAsTextIfPossible).containsExactly(*fooFixtureClassLines)
+        assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
 
+    @Test
+    fun `should properly read ISO-8859-1 text files`() {
+        val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("iso8859-1.properties"))
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
 
+        assertThat(textContent).containsExactly(
+            "#",
+            "# jardiff",
+            "#",
+            "# Copyright (c) 2025 - Brice Dutheil",
+            "#",
+            "# This Source Code Form is subject to the terms of the Mozilla Public",
+            "# License, v. 2.0. If a copy of the MPL was not distributed with this",
+            "# file, You can obtain one at https://mozilla.org/MPL/2.0/.",
+            "#",
+            "",
+            "# This is a properties file because encoding is supposed to be ISO-8859-1.",
+            "# See Properties javadoc",
+            "",
+            "# Accented chars are improperly decoded when using an UTF-8 decoder",
+            "# è é à â î ï ñ",
+            ""
+        )
+    }
+
+    @Test
+    fun `should properly read UTF-8 text files`() {
+        val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-8.md"))
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+
+        assertThat(textContent).containsExactly(
+            "> [!IMPORTANT]",
+            "> This file is supposed to be **UTF-8**",
+            "",
+            "> Café naïve jalapeño",
+            "",
+            "UTF-8 encodes é as two bytes (`0xC3` `0xA9`), but in Latin-1 those bytes show as “Ã©”.",
+            "",
+            "> The temperature is 19°C 🌤️",
+            "",
+            "* The degree sign (°) is `0xC2` `0xBA` in UTF-8.",
+            "* The sun emoji (🌤️) is three code points. Wrong decoders may show gibberish or replacement boxes.",
+            "",
+            "> Привет мир (Hello world in Russian)",
+            "> こんにちは世界 (Hello world in Japanese)",
+            "> مرحبا بالعالم (Hello world in Arabic)",
+            "",
+            "These characters require 2–3 bytes each in UTF-8. Single-byte decoders will definitely break.",
+            "",
+            "> Café (the e + combining acute U+0301)",
+            "",
+            "This looks identical to “Café” but is actually two code points."
+        )
+    }
+
+    @Test
+    fun `should properly read UTF-16 text files`() {
+        val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-16be.md"))
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+
+        assertThat(textContent).containsExactly(
+            "﻿> [!IMPORTANT]",
+            "> This file is supposed to be **UTF-16**",
+            "",
+            "> Café naïve jalapeño",
+            "> The temperature is 19°C 🌤️",
+            "> Привет мир (Hello world in Russian)",
+            "> こんにちは世界 (Hello world in Japanese)",
+            "> مرحبا بالعالم (Hello world in Arabic)",
+            "> Café (the e + combining acute U+0301)"
+        )
+    }
+
+    @Test
+    fun `should properly read US_ASCII text files`() {
+        val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("us-ascii.md"))
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+
+        assertThat(textContent).containsExactly(
+            "> [!IMPORTANT]",
+            "> This file is supposed to be **US-ASCII**",
+            "",
+            "> Cafe naive jalapeno",
+            "",
+            "Characters are 7-bits"
+        )
+    }
+
+    @Test
+    fun `should properly read Windoes CP-1252 text files`() {
+        val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("cp1252.md"))
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+
+        assertThat(textContent).containsExactly(
+            "> [!IMPORTANT]",
+            "> This file is supposed to be **Windows CP-1252**",
+            "",
+            "> Café naïve jalapeño",
+            "> The temperature is 19ºC"
+        )
+    }
 
     private val fooFixtureClassLines = arrayOf(
         "// class version 68.0 (68)",

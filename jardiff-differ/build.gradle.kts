@@ -22,8 +22,10 @@ dependencies {
 tasks.test {
     val fixtureJarPath = tasks.testFixturesJar.map { it.archiveFile.get().asFile.absolutePath }
     val fixturesKotlinClassesPath = sourceSets.testFixtures.map { it.kotlin.classesDirectory.get().asFile.absolutePath }
+    val fixturesResourcesPath = sourceSets.testFixtures.map { it.output.resourcesDir }
     doFirst {
         systemProperties("text-fixtures.jar.path" to fixtureJarPath.get())
         systemProperties("text-fixtures.kotlin.classes.path" to fixturesKotlinClassesPath.get())
+        systemProperties("text-fixtures.resources.path" to fixturesResourcesPath.get())
     }
 }
