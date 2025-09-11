@@ -71,7 +71,7 @@ object FileReader {
 
     private fun asmTextifier(inputStream: InputStream): List<String> {
         return StringWriter().use { writer ->
-            AnyInputStreamTextifier().textify(PrintWriter(writer), inputStream)
+            AnyInputStreamTextifier.textify(writer, inputStream)
             writer.toString().lines()
         }
     }

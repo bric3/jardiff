@@ -16,15 +16,16 @@ import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceClassVisitor
 import java.io.InputStream
 import java.io.PrintWriter
+import java.io.Writer
 
-internal class AnyInputStreamTextifier : Textifier(Opcodes.ASM9) {
+internal object AnyInputStreamTextifier : Textifier(Opcodes.ASM9) {
     /**
      * Directly replace [Textifier.main] / [org.objectweb.asm.util.Printer.main] to read from [InputStream].
      *
      * Closes the [inputStream] when done.
      */
-    fun textify(output: PrintWriter, inputStream: InputStream, noDebug: Boolean = false) {
-        val traceClassVisitor = TraceClassVisitor(null, output)
+    fun textify(output: Writer, inputStream: InputStream, noDebug: Boolean = false) {
+        val traceClassVisitor = TraceClassVisitor(null, PrintWriter(output, true))
 
         inputStream.use {
             ClassReader(it).accept(
