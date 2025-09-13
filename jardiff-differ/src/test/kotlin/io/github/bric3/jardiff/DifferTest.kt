@@ -31,7 +31,8 @@ class DifferTest {
         val output = StringWriter()
 
         Differ(
-            Logger(output, StringWriter(), verbosity(1)),
+            Logger(output, StringWriter(), verbosity(0)),
+            OutputMode.simple,
             PathToDiff.of(PathToDiff.LeftOrRight.LEFT, singleClassJar),
             PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),
         ).diff()

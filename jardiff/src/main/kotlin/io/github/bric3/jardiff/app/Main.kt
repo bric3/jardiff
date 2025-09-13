@@ -12,6 +12,7 @@ package io.github.bric3.jardiff.app
 
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
+import io.github.bric3.jardiff.OutputMode
 import io.github.bric3.jardiff.PathToDiff
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
@@ -20,6 +21,7 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Model.CommandSpec
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
+import picocli.CommandLine.RunLast
 import picocli.CommandLine.Spec
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,7 +54,18 @@ class Main : Runnable {
         description = ["A glob exclude pattern, e.g. ", "'**/raw*/**', or '**/*.bin'"],
         defaultValue = ""
     )
-    lateinit var excludes: Set<String>
+    var excludes: Set<String> = emptySet()
+
+    @Option(
+        names = ["-m", "--output-mode"],
+        arity = "1",
+        paramLabel = "<mode>",
+        description = [
+            "Output mode, default: \${DEFAULT-VALUE})",
+            "other outputs: \${COMPLETION-CANDIDATES}"
+        ]
+    )
+    var outputMode = OutputMode.diff
 
     @Option(
         names = ["--class-file-extensions"],
@@ -65,7 +78,7 @@ class Main : Runnable {
         split = ",",
         defaultValue = ""
     )
-    lateinit var additionalClassExtensions: Set<String>
+    var additionalClassExtensions: Set<String> = emptySet()
 
     @Option(
         names = ["-v"],
@@ -75,20 +88,26 @@ class Main : Runnable {
         ],
         arity = "0..3"
     )
-    lateinit var verbosity: BooleanArray
+    var verbosity = booleanArrayOf()
 
     @Spec
     lateinit var spec: CommandSpec
 
-    override fun run() {
-        val left = PathToDiff.of(LEFT, makePath(left))
-        val right = PathToDiff.of(RIGHT, makePath(right))
+    private lateinit var logger: Logger
 
-        val logger = Logger(
+    private fun executionStrategy(parseResult: CommandLine.ParseResult): Int {
+        // init logger
+        logger = Logger(
             spec.commandLine().out,
             spec.commandLine().err,
             verbosity,
         )
+        return RunLast().execute(parseResult)
+    }
+
+    override fun run() {
+        val left = PathToDiff.of(LEFT, makePath(left))
+        val right = PathToDiff.of(RIGHT, makePath(right))
 
         logger.verbose1(
             """
@@ -100,7 +119,8 @@ class Main : Runnable {
         )
 
         Differ(
-            logger,
+            logger = logger,
+            outputMode = outputMode,
             left = left,
             right = right,
             excludes = excludes,
@@ -110,23 +130,23 @@ class Main : Runnable {
         }
     }
 
+    private fun makePath(it: String): Path = Path.of(it).also {
+        if (Files.exists(it).not()) {
+            logger.stderr("File or directory does not exist: $it")
+            exitProcess(1)
+        }
+    }
+
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
+            val main = Main()
             exitProcess(
-                CommandLine(
-                    Main(
-
-                    )
-                ).execute(*args)
+                CommandLine(main)
+                    .setCaseInsensitiveEnumValuesAllowed(true)
+                    .setExecutionStrategy(main::executionStrategy)
+                    .execute(*args)
             )
-        }
-
-        fun makePath(it: String): Path = Path.of(it).also {
-            if (Files.exists(it).not()) {
-                Logger.stderr("File or directory does not exist: $it")
-                exitProcess(1)
-            }
         }
     }
 }

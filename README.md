@@ -2,10 +2,9 @@
 
 Jardiff is a command-line tool for comparing the contents of JAR files and directories. It provides detailed, line-based diffs of class files and resources, making it easy to spot changes between builds, releases, or different versions of Java/Kotlin projects.
          
-Example output :
+Example output in `diff` mode (the default):
 
 ```diff
-⨯ foo/bar/qux/Baz.class
 --- foo/bar/qux/Baz.class
 +++ foo/bar/qux/Baz.class
 @@ -6,1548 +6,17 @@
@@ -45,10 +44,14 @@ Example output :
      DUP
      LDC 0
      ANEWARRAY java/lang/String
+```
+
+Or with the `simple` mode
+
+```
+⨯ foo/bar/qux/Baz.class
 ✔ foo/bar/qux/Zorg.class
 ```
-In the example above the command is passed the verbose flag `-v` to log 
-passed ✔ or ⨯ failed files 
 
 ## Features
 
@@ -81,18 +84,25 @@ Build it `./gradlew build`, then run it:
 
 ```shell
 $ java -jar jardiff/build/shadowed-app/jardiff-0.1.0-SNAPSHOT.jar -h
-Usage: jardiff [-hV] [--class-file-extensions=<extension>[,<extension>...]]...
-               [-e=<glob>]... <left> <right>
+Usage: jardiff [-hV] [-m=<mode>] [--class-file-extensions=<extension>[,
+               <extension>...]]... [-e=<glob>]... [-v[=<verbosity> [<verbosity>
+               [<verbosity>]]]]... <left> <right>
 Compares two JAR files or directories and reports differences.
-      <left>             The JAR file or directory to compare.
-      <right>            The JAR file or directory to compare.
+      <left>                 The JAR file or directory to compare.
+      <right>                The JAR file or directory to compare.
       --class-file-extensions=<extension>[,<extension>...]
-                         A comma separated list of class file extension, e.g.
-                          'classdata' or 'raw,bin,clazz'
-  -e, --exclude=<glob>   A glob exclude pattern, e.g.
-                         '**/raw*/**', or '**/*.bin'
-  -h, --help             Show this help message and exit.
-  -V, --version          Print version information and exit.
+                             A comma separated list of class file extension, e.
+                               g.
+                              'classdata' or 'raw,bin,clazz'
+  -e, --exclude=<glob>       A glob exclude pattern, e.g.
+                             '**/raw*/**', or '**/*.bin'
+  -h, --help                 Show this help message and exit.
+  -m, --output-mode=<mode>   Output mode, default: DIFF)
+                             other outputs: SIMPLE, DIFF
+  -v=[<verbosity> [<verbosity> [<verbosity>]]]
+                             Specify multiple -v options to increase verbosity.
+                             For example, `-v -v -v` or `-vvv`
+  -V, --version              Print version information and exit.
 ```
 
 > [!TIP]

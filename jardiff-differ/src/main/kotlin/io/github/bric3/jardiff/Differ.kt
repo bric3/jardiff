@@ -15,6 +15,8 @@ import com.github.difflib.UnifiedDiffUtils
 import io.github.bric3.jardiff.FileReader.readFileAsTextIfPossible
 import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
+import io.github.bric3.jardiff.OutputMode.diff
+import io.github.bric3.jardiff.OutputMode.simple
 import java.io.Closeable
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -24,6 +26,7 @@ import kotlin.streams.asSequence
 
 class Differ(
     private val logger: Logger,
+    private val outputMode: OutputMode,
     private val left: PathToDiff,
     private val right: PathToDiff,
     private val excludes: Set<String> = emptySet(),
@@ -53,11 +56,15 @@ class Differ(
                 4
             )
 
-            if (unifiedDiff.size > 0) {
-                logger.verbose1("${red("⨯")} ${it.path}")
-                unifiedDiff.forEach(logger::stdout)
-            } else {
-                logger.verbose1("${green("✔")}️ ${it.path}")
+            when (outputMode) {
+                simple -> logger.stdout(
+                    if (unifiedDiff.size > 0) {
+                        "${red("⨯")} ${it.path}"
+                    } else {
+                        "${green("✔")}️ ${it.path}"
+                    }
+                )
+                diff -> unifiedDiff.forEach(logger::stdout)
             }
         }
     }
@@ -88,6 +95,7 @@ class Differ(
                     .filter(pathFilter)
                     .associateBy { it.relativePath }
             }
+
             is PathToDiff.Directory -> {
                 Files.walk(pathToDiff.path).asSequence()
                     .filter { Files.isRegularFile(it) }
@@ -124,6 +132,7 @@ class Differ(
             }
         }
     }
+
     data class FileEntryToDiff(
         val path: Path,
         val left: FileAccess?,
