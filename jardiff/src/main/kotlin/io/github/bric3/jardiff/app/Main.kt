@@ -16,10 +16,15 @@ import io.github.bric3.jardiff.PathToDiff
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
 import picocli.CommandLine
-import picocli.CommandLine.*
+import picocli.CommandLine.Command
+import picocli.CommandLine.Model.CommandSpec
+import picocli.CommandLine.Option
+import picocli.CommandLine.Parameters
+import picocli.CommandLine.Spec
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.exitProcess
+
 
 @Command(
     name = "jardiff",
@@ -62,11 +67,30 @@ class Main : Runnable {
     )
     lateinit var additionalClassExtensions: Set<String>
 
+    @Option(
+        names = ["-v"],
+        description = [
+            "Specify multiple -v options to increase verbosity.",
+            "For example, `-v -v -v` or `-vvv`"
+        ],
+        arity = "0..3"
+    )
+    lateinit var verbosity: BooleanArray
+
+    @Spec
+    lateinit var spec: CommandSpec
+
     override fun run() {
         val left = PathToDiff.of(LEFT, makePath(left))
         val right = PathToDiff.of(RIGHT, makePath(right))
 
-        Logger.stdout(
+        val logger = Logger(
+            spec.commandLine().out,
+            spec.commandLine().err,
+            verbosity,
+        )
+
+        logger.verbose1(
             """
             Comparing:
             * ${left.path}
@@ -76,10 +100,11 @@ class Main : Runnable {
         )
 
         Differ(
+            logger,
             left = left,
             right = right,
             excludes = excludes,
-            addtionalClassExtensions = additionalClassExtensions
+            additionalClassExtensions = additionalClassExtensions
         ).use {
             it.diff()
         }
@@ -88,7 +113,13 @@ class Main : Runnable {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            exitProcess(CommandLine(Main()).execute(*args))
+            exitProcess(
+                CommandLine(
+                    Main(
+
+                    )
+                ).execute(*args)
+            )
         }
 
         fun makePath(it: String): Path = Path.of(it).also {
