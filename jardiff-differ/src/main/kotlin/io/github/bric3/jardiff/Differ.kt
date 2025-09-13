@@ -13,6 +13,8 @@ package io.github.bric3.jardiff
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import io.github.bric3.jardiff.FileReader.readFileAsTextIfPossible
+import io.github.bric3.jardiff.Logger.Companion.green
+import io.github.bric3.jardiff.Logger.Companion.red
 import java.io.Closeable
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -21,10 +23,11 @@ import java.util.jar.JarFile
 import kotlin.streams.asSequence
 
 class Differ(
+    private val logger: Logger,
     private val left: PathToDiff,
     private val right: PathToDiff,
-    private val excludes: Set<String>,
-    private val addtionalClassExtensions: Set<String> = emptySet(),
+    private val excludes: Set<String> = emptySet(),
+    private val additionalClassExtensions: Set<String> = emptySet(),
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
 
@@ -34,8 +37,8 @@ class Differ(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = readFileAsTextIfPossible(it.left, addtionalClassExtensions)
-            val rightLines = readFileAsTextIfPossible(it.right, addtionalClassExtensions)
+            val leftLines = readFileAsTextIfPossible(it.left, additionalClassExtensions)
+            val rightLines = readFileAsTextIfPossible(it.right, additionalClassExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
@@ -51,10 +54,10 @@ class Differ(
             )
 
             if (unifiedDiff.size > 0) {
-                Logger.stdout("${Logger.RED}⨯${Logger.RESET} ${it.path}")
-                unifiedDiff.forEach(Logger::stdout)
+                logger.verbose1("${red("⨯")} ${it.path}")
+                unifiedDiff.forEach(logger::stdout)
             } else {
-                Logger.stdout("${Logger.GREEN}✔${Logger.RESET}️ ${it.path}")
+                logger.verbose1("${green("✔")}️ ${it.path}")
             }
         }
     }
@@ -106,7 +109,7 @@ class Differ(
                 it.matches(file.relativePath)
             }.also { accepted ->
                 if (!accepted) {
-                    Logger.verbose("Excluded: ${file.relativePath}")
+                    logger.verbose2("Excluded: ${file.relativePath}")
                 }
             }
         }
@@ -117,7 +120,7 @@ class Differ(
             try {
                 it.close()
             } catch (e: Exception) {
-                Logger.stderr("Error closing resource: ${e.message}")
+                logger.stderr("Error closing resource: ${e.message}")
             }
         }
     }

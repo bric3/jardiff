@@ -10,9 +10,16 @@
 
 package io.github.bric3.jardiff
 
+import java.io.BufferedOutputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 import kotlin.io.path.extension
 import kotlin.reflect.KClass
 
@@ -53,3 +60,32 @@ val fixtureJar: Path
     get() = Path.of(System.getProperty(FIXTURES_JAR)).also {
         require(it.extension == "jar" && Files.isRegularFile(it)) { "Path in '$FIXTURES_JAR' must be a jar, got $it" }
     }
+
+fun createJarFromResources(
+    destinationDir: Path,
+    cl: ClassLoader,
+    vararg resourceNames: String
+): Path {
+    val tmpJar = destinationDir.resolve("${UUID.randomUUID()}.jar")
+
+    val manifest = Manifest()
+    JarOutputStream(
+        BufferedOutputStream(Files.newOutputStream(tmpJar)),
+        manifest
+    ).use { target ->
+        for (resourceName in resourceNames) {
+            val inputStream = cl.getResourceAsStream(resourceName)
+            if (inputStream == null) {
+                System.err.println("$resourceName not found in $cl")
+                continue
+            }
+            
+            inputStream.buffered().use {
+                target.putNextEntry(JarEntry(resourceName))
+                target.write(it.readAllBytes())
+                target.closeEntry()
+            }
+        }
+    }
+    return tmpJar
+}

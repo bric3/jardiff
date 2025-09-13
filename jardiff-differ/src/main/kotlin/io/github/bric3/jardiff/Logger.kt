@@ -10,11 +10,23 @@
 
 package io.github.bric3.jardiff
 
-object Logger {
-    const val GREEN = "\u001B[32m"
-    const val RED = "\u001B[31m"
-    const val RESET = "\u001B[0m"
+import java.io.PrintWriter
+import java.io.StringWriter
 
+class Logger(
+    private val stdout: PrintWriter,
+    private val stderr: PrintWriter,
+    verbosity: BooleanArray = booleanArrayOf(),
+) {
+    constructor(
+        stdout: StringWriter,
+        stderr: StringWriter,
+        verbosity: BooleanArray
+    ) : this(
+        PrintWriter(stdout), PrintWriter(stderr), verbosity
+    )
+
+    private var level: Int = verbosity.size
     private val isDebugging by lazy {
         ProcessHandle.current().info()
             .arguments().map { args ->
@@ -23,15 +35,31 @@ object Logger {
     }
 
     fun stdout(message: String) {
-        println(message)
+        // level 0
+        stdout.println(message)
     }
     fun stderr(message: String) {
-        System.err.println(message)
+        stderr.println(message)
     }
 
-    fun verbose(msg: String) {
-        if (isDebugging) {
+    fun verbose1(msg: String) {
+        if (level >= 1 || isDebugging) {
             stdout(msg)
         }
+    }
+
+    fun verbose2(msg: String) {
+        if (level >= 2 || isDebugging) {
+            stdout(msg)
+        }
+    }
+
+    companion object {
+        private const val GREEN = "\u001B[32m"
+        private const val RED = "\u001B[31m"
+        private const val RESET = "\u001B[0m"
+        fun red(text: String) = "$RED$text$RESET"
+
+        fun green(text: String) = "$GREEN$text$RESET"
     }
 }

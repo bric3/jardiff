@@ -2,7 +2,7 @@
 
 Jardiff is a command-line tool for comparing the contents of JAR files and directories. It provides detailed, line-based diffs of class files and resources, making it easy to spot changes between builds, releases, or different versions of Java/Kotlin projects.
          
-Example output:
+Example output :
 
 ```diff
 ⨯ foo/bar/qux/Baz.class
@@ -45,8 +45,10 @@ Example output:
      DUP
      LDC 0
      ANEWARRAY java/lang/String
-✔️ foo/bar/qux/Zorg.class
+✔ foo/bar/qux/Zorg.class
 ```
+In the example above the command is passed the verbose flag `-v` to log 
+passed ✔ or ⨯ failed files 
 
 ## Features
 
