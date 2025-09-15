@@ -11,12 +11,11 @@
 package io.github.bric3.jardiff
 
 import java.io.BufferedOutputStream
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
@@ -82,9 +81,14 @@ fun createJarFromResources(
 ): Path {
     val tmpJar = destinationDir.resolve("${UUID.randomUUID()}.jar")
 
-    val manifest = Manifest()
+    val manifest = Manifest().apply {
+        mainAttributes.let {
+            it[Attributes.Name.MANIFEST_VERSION] = "1.0"
+            it[Attributes.Name("Created-By")] = "TestUtils"
+        }
+    }
     JarOutputStream(
-        BufferedOutputStream(Files.newOutputStream(tmpJar)),
+        Files.newOutputStream(tmpJar).buffered(),
         manifest
     ).use { target ->
         for (resourceName in resourceNames) {

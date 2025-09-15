@@ -56,14 +56,14 @@ class DifferTest {
     }
 
     @Test
-    fun `should detect differences between jar and directory using simple mode`() {
+    fun `should detect differences between directory and jar using simple mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
             FooFixtureClass::class.path
         )
 
-        val output = diff(simple, FooFixtureClass::class.location, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(simple, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
 
         assertThat(output).isEqualTo(
             """
@@ -75,27 +75,27 @@ class DifferTest {
     }
 
     @Test
-    fun `should detect single differences between jar and directory using diff mode`() {
+    fun `should detect single differences between directory and jar using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
             FooFixtureClass::class.path
         )
 
-        val output = diff(diff, FooFixtureClass::class.location, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(diff, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
 
         assertThat(output).isEqualTo(
             """
-            --- META-INF/MANIFEST.MF
+            --- /dev/null
             +++ META-INF/MANIFEST.MF
-            @@ -1,2 +1,1 @@
-            -Manifest-Version: 1.0
-            -
-            +BINARY FILE SHA-1: ba8ab5a0280b953aa97435ff8946cbcbb2755a27
+            @@ -0,0 +1,3 @@
+            +Manifest-Version: 1.0
+            +Created-By: TestUtils
+            +
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -BINARY FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
             """.trimIndent()
         )
     }
@@ -110,7 +110,7 @@ class DifferTest {
         )
 
         val output = diff(simple,
-            FooFixtureClass::class.location,
+            fixtureClassesOutput,
             singleClassJar,
             excludes = setOf("*.md", "*.properties"),
             coalesceClassFileWithExts = setOf("classdata")
@@ -135,7 +135,7 @@ class DifferTest {
         )
 
         val output = diff(diff,
-            FooFixtureClass::class.location,
+            fixtureClassesOutput,
             singleClassJar,
             excludes = setOf("*.md", "*.properties"),
             coalesceClassFileWithExts = setOf("classdata")
@@ -143,16 +143,16 @@ class DifferTest {
 
         assertThat(output).describedAs("no class differences").isEqualTo(
             """
-            --- META-INF/MANIFEST.MF
+            --- /dev/null
             +++ META-INF/MANIFEST.MF
-            @@ -1,2 +1,1 @@
-            -Manifest-Version: 1.0
-            -
-            +BINARY FILE SHA-1: ba8ab5a0280b953aa97435ff8946cbcbb2755a27
+            @@ -0,0 +1,3 @@
+            +Manifest-Version: 1.0
+            +Created-By: TestUtils
+            +
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -BINARY FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
             """.trimIndent()
         )
     }
@@ -219,14 +219,14 @@ class DifferTest {
             """
             --- META-INF/MANIFEST.MF
             +++ META-INF/MANIFEST.MF
-            @@ -1,2 +1,1 @@
-            -Manifest-Version: 1.0
-            -
-            +BINARY FILE SHA-1: ba8ab5a0280b953aa97435ff8946cbcbb2755a27
+            @@ -1,2 +1,3 @@
+             Manifest-Version: 1.0
+            +Created-By: TestUtils
+             
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -BINARY FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
             --- /dev/null
             +++ io/github/bric3/jardiff/FooFixtureClass.classdata
             @@ -0,0 +1,37 @@

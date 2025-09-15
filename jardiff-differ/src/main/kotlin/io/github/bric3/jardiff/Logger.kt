@@ -36,32 +36,26 @@ class Logger(
     fun stdout(message: String) {
         // level 0
         stdout.println(message)
+        debugLog(message)
     }
 
     fun stderr(message: String) {
         stderr.println(message)
+        debugLog(message)
     }
 
     fun verbose1(msg: String) {
         if (level >= 1) {
             stderr(msg)
         }
-        if (isDebugging) {
-            debugLog(msg)
-        }
+        debugLog(msg)
     }
 
     fun verbose2(msg: String) {
         if (level >= 2) {
             stderr(msg)
         }
-        if (isDebugging) {
-            debugLog(msg)
-        }
-    }
-
-    private fun debugLog(msg: String) {
-        println(msg)
+        debugLog(msg)
     }
 
     companion object {
@@ -78,6 +72,12 @@ class Logger(
                 .arguments().map { args ->
                     args.any { it.startsWith("-agentlib:jdwp") }
                 }.get()
+        }
+
+        fun debugLog(msg: String) {
+            if (isDebugging) {
+                println(msg)
+            }
         }
     }
 }
