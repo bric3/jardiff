@@ -22,6 +22,9 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.jar.JarFile
+import kotlin.io.path.extension
+import kotlin.io.path.nameWithoutExtension
+import kotlin.io.path.pathString
 import kotlin.streams.asSequence
 
 class Differ(
@@ -30,7 +33,7 @@ class Differ(
     private val left: PathToDiff,
     private val right: PathToDiff,
     private val excludes: Set<String> = emptySet(),
-    private val additionalClassExtensions: Set<String> = emptySet(),
+    private val coalesceClassFileWithExtensions: Set<String> = emptySet(),
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
 
@@ -40,8 +43,8 @@ class Differ(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = readFileAsTextIfPossible(it.left, additionalClassExtensions)
-            val rightLines = readFileAsTextIfPossible(it.right, additionalClassExtensions)
+            val leftLines = readFileAsTextIfPossible(it.left, coalesceClassFileWithExtensions)
+            val rightLines = readFileAsTextIfPossible(it.right, coalesceClassFileWithExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
@@ -64,6 +67,7 @@ class Differ(
                         "${green("✔")}️ ${it.path}"
                     }
                 )
+
                 diff -> unifiedDiff.forEach(logger::stdout)
             }
         }
@@ -73,13 +77,76 @@ class Differ(
         leftEntries: Map<Path, FileAccess>,
         rightEntries: Map<Path, FileAccess>
     ): List<FileEntryToDiff> {
+        val classExtensions = coalesceClassFileWithExtensions + "class"
+
         val allKeys = (leftEntries + rightEntries).keys
-        val changes = buildList {
-            allKeys.forEach {
-                add(FileEntryToDiff(it, leftEntries[it], rightEntries[it]))
+            .asSequence()
+            .sorted()
+            .map { path ->
+                // TODO relace this code by a proper of ClassFileEntry type,
+                //  and by a regular FileEntry
+                when {
+                    path.extension in classExtensions -> {
+                        CoalescedClassEntry(
+                            path.parent.pathString,
+                            path.nameWithoutExtension,
+                        ).apply {
+                            originalPath = path
+                        }
+                    }
+
+                    else -> RegularEntry(path)
+                }
+
+            }
+            .distinct()
+
+        return buildList {
+            allKeys.forEach { entry ->
+                when (entry) {
+                    is CoalescedClassEntry -> {
+                        // TODO then here if ClassFileEntry, checks the left and right entries
+                        //  bailout coalescing if multiple file exist on the same side.
+
+                        val aliasedPaths = classExtensions.map {
+                            Path.of(entry.parentPath, "${entry.classFileName}.$it")
+                        }
+
+                        // do not coalesce if multiple on the same side
+                        val leftClasses = aliasedPaths.mapNotNull { leftEntries[it] }
+                        val rightClasses = aliasedPaths.mapNotNull { rightEntries[it] }
+
+                        if ((leftClasses.count() <= 1) or (rightClasses.count() <= 1)) {
+                            add(
+                                FileEntryToDiff(
+                                    Path.of(entry.parentPath, "${entry.classFileName}.class").toString(),
+                                    leftClasses.singleOrNull(),
+                                    rightClasses.singleOrNull(),
+                                )
+                            )
+                        } else {
+                            add(
+                                FileEntryToDiff(
+                                    entry.originalPath.toString(),
+                                    leftEntries[entry.originalPath],
+                                    rightEntries[entry.originalPath],
+                                )
+                            )
+                        }
+                    }
+
+                    is RegularEntry -> {
+                        add(
+                            FileEntryToDiff(
+                                entry.path.pathString,
+                                leftEntries[entry.path],
+                                rightEntries[entry.path]
+                            )
+                        )
+                    }
+                }
             }
         }
-        return changes
     }
 
     private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileAccess> {
@@ -133,8 +200,20 @@ class Differ(
         }
     }
 
+    sealed class FileEntry
+    data class CoalescedClassEntry(
+        val parentPath: String,
+        val classFileName: String,
+    ) : FileEntry() {
+        lateinit var originalPath: Path
+    }
+
+    data class RegularEntry(
+        val path: Path
+    ) : FileEntry()
+
     data class FileEntryToDiff(
-        val path: Path,
+        val path: String,
         val left: FileAccess?,
         val right: FileAccess?,
     )

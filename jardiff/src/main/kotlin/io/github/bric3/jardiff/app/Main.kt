@@ -51,10 +51,13 @@ class Main : Runnable {
         names = ["-e", "--exclude"],
         arity = "1",
         paramLabel = "<glob>",
-        description = ["A glob exclude pattern, e.g. ", "'**/raw*/**', or '**/*.bin'"],
+        description = [
+            "A glob exclude pattern, e.g. ",
+            "'**/raw*/**', or '**/*.bin'."
+        ],
         defaultValue = ""
     )
-    var excludes: Set<String> = emptySet()
+    var excludes = emptySet<String>()
 
     @Option(
         names = ["-m", "--output-mode"],
@@ -62,23 +65,26 @@ class Main : Runnable {
         paramLabel = "<mode>",
         description = [
             "Output mode, default: \${DEFAULT-VALUE})",
-            "other outputs: \${COMPLETION-CANDIDATES}"
+            "Possible outputs: \${COMPLETION-CANDIDATES}."
         ]
     )
     var outputMode = OutputMode.diff
 
     @Option(
-        names = ["--class-file-extensions"],
+        names = ["-ce", "--class-exts", "--coalesce-classe-exts"],
         arity = "1",
         paramLabel = "<extension>",
         description = [
-            "A comma separated list of class file extension, e.g.",
-            " 'classdata' or 'raw,bin,clazz'"
+            "Coalesce class files with the given extensions, in",
+            "addition to the usual 'class', i.e. makes classes",
+            "named 'Foo.class' and 'Foo.bin' aliased to the same",
+            "file same entry. Also this enables the file to be",
+            "compared on bytecode level Takes a comma separated",
+            "list, e.g. 'classdata' or 'raw,bin,clazz'."
         ],
-        split = ",",
-        defaultValue = ""
+        split = ","
     )
-    var additionalClassExtensions: Set<String> = emptySet()
+    var coalesceClassFileWithExtensions = emptySet<String>()
 
     @Option(
         names = ["-v"],
@@ -124,7 +130,7 @@ class Main : Runnable {
             left = left,
             right = right,
             excludes = excludes,
-            additionalClassExtensions = additionalClassExtensions
+            coalesceClassFileWithExtensions = coalesceClassFileWithExtensions
         ).use {
             it.diff()
         }

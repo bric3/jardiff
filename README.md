@@ -84,21 +84,23 @@ Build it `./gradlew build`, then run it:
 
 ```shell
 $ java -jar jardiff/build/shadowed-app/jardiff-0.1.0-SNAPSHOT.jar -h
-Usage: jardiff [-hV] [-m=<mode>] [--class-file-extensions=<extension>[,
-               <extension>...]]... [-e=<glob>]... [-v[=<verbosity> [<verbosity>
-               [<verbosity>]]]]... <left> <right>
+Usage: jardiff [-hVv] [-m=<mode>] [-ce=<extension>[,<extension>...]]...
+               [-e=<glob>]... <left> <right>
 Compares two JAR files or directories and reports differences.
       <left>                 The JAR file or directory to compare.
       <right>                The JAR file or directory to compare.
-      --class-file-extensions=<extension>[,<extension>...]
-                             A comma separated list of class file extension, e.
-                               g.
-                              'classdata' or 'raw,bin,clazz'
+      -ce, --class-exts, --coalesce-classe-exts=<extension>[,<extension>...]
+                             Coalesce class files with the given extensions, in
+                             addition to the usual 'class', i.e. makes classes
+                             named 'Foo.class' and 'Foo.bin' aliased to the same
+                             file same entry. Also this enables the file to be
+                             compared on bytecode level Takes a comma separated
+                             list, e.g. 'classdata' or 'raw,bin,clazz'.
   -e, --exclude=<glob>       A glob exclude pattern, e.g.
                              '**/raw*/**', or '**/*.bin'
   -h, --help                 Show this help message and exit.
-  -m, --output-mode=<mode>   Output mode, default: DIFF)
-                             other outputs: SIMPLE, DIFF
+  -m, --output-mode=<mode>   Output mode, default: diff)
+                             Possible outputs: simple, diff.
   -v=[<verbosity> [<verbosity> [<verbosity>]]]
                              Specify multiple -v options to increase verbosity.
                              For example, `-v -v -v` or `-vvv`

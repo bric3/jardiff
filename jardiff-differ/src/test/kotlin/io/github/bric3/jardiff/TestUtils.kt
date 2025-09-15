@@ -66,6 +66,20 @@ fun createJarFromResources(
     cl: ClassLoader,
     vararg resourceNames: String
 ): Path {
+    return createJarFromResources(
+        destinationDir = destinationDir,
+        cl = cl,
+        entryRenamer = { it },
+        resourceNames = resourceNames
+    )
+}
+
+fun createJarFromResources(
+    destinationDir: Path,
+    cl: ClassLoader,
+    entryRenamer: (String) -> String,
+    vararg resourceNames: String
+): Path {
     val tmpJar = destinationDir.resolve("${UUID.randomUUID()}.jar")
 
     val manifest = Manifest()
@@ -81,7 +95,7 @@ fun createJarFromResources(
             }
             
             inputStream.buffered().use {
-                target.putNextEntry(JarEntry(resourceName))
+                target.putNextEntry(JarEntry(entryRenamer.invoke(resourceName)))
                 target.write(it.readAllBytes())
                 target.closeEntry()
             }

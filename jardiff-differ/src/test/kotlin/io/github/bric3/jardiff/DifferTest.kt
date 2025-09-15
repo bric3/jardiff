@@ -14,11 +14,9 @@ import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.simple
-import net.bytebuddy.build.ToStringPlugin.Exclude
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import java.awt.Color.red
 import java.io.StringWriter
 import java.nio.file.Path
 
@@ -102,14 +100,78 @@ class DifferTest {
         )
     }
 
-    private fun diff(outputMode: OutputMode, left: Path, right: Path, excludes: Set<String> = emptySet()): String {
+    @Test
+    fun `should collapse classes with different extension with simple mode`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            { it.replace(".class", ".classdata") },
+            FooFixtureClass::class.path
+        )
+
+        val output = diff(simple,
+            FooFixtureClass::class.location,
+            singleClassJar,
+            excludes = setOf("*.md", "*.properties"),
+            coalesceClassFileWithExts = setOf("classdata")
+        )
+
+        assertThat(output).describedAs("no class differences").isEqualTo(
+            """
+            ${red("⨯")} META-INF/MANIFEST.MF
+            ${red("⨯")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${green("✔")}️ io/github/bric3/jardiff/FooFixtureClass.class
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `should collapse classes with different extension with diff mode`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            { it.replace(".class", ".classdata") },
+            FooFixtureClass::class.path
+        )
+
+        val output = diff(diff,
+            FooFixtureClass::class.location,
+            singleClassJar,
+            excludes = setOf("*.md", "*.properties"),
+            coalesceClassFileWithExts = setOf("classdata")
+        )
+
+        assertThat(output).describedAs("no class differences").isEqualTo(
+            """
+            --- META-INF/MANIFEST.MF
+            +++ META-INF/MANIFEST.MF
+            @@ -1,2 +1,1 @@
+            -Manifest-Version: 1.0
+            -
+            +BINARY FILE SHA-1: ba8ab5a0280b953aa97435ff8946cbcbb2755a27
+            --- META-INF/jardiff-differ_testFixtures.kotlin_module
+            +++ /dev/null
+            @@ -1,1 +1,0 @@
+            -BINARY FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            """.trimIndent()
+        )
+    }
+
+    private fun diff(
+        outputMode: OutputMode,
+        left: Path,
+        right: Path,
+        excludes: Set<String> = emptySet(),
+        coalesceClassFileWithExts: Set<String> = emptySet(),
+    ): String {
         val output = StringWriter()
         Differ(
             logger = Logger(output, StringWriter(), verbosity(0)),
             outputMode = outputMode,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, left),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, right),
-            excludes = excludes
+            excludes = excludes,
+            coalesceClassFileWithExtensions = coalesceClassFileWithExts,
         ).diff()
         return output.toString().trim()
     }

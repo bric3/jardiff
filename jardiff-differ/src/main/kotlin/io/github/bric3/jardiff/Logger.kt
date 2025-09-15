@@ -43,14 +43,14 @@ class Logger(
     }
 
     fun verbose1(msg: String) {
-        if (level >= 1 || isDebugging) {
-            stdout(msg)
+        if (level >= 1) {
+            stderr(msg)
         }
     }
 
     fun verbose2(msg: String) {
-        if (level >= 2 || isDebugging) {
-            stdout(msg)
+        if (level >= 2) {
+            stderr(msg)
         }
     }
 
