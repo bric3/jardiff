@@ -26,18 +26,18 @@ class Logger(
         PrintWriter(stdout), PrintWriter(stderr), verbosity
     )
 
-    private var level: Int = verbosity.size
-    private val isDebugging by lazy {
-        ProcessHandle.current().info()
-            .arguments().map { args ->
-                args.any { it.startsWith("-agentlib:jdwp") }
-            }.get()
+    private var level: Int
+
+    init {
+        require(verbosity.size <= MAX_VERBOSITY)
+        level = verbosity.size
     }
 
     fun stdout(message: String) {
         // level 0
         stdout.println(message)
     }
+
     fun stderr(message: String) {
         stderr.println(message)
     }
@@ -46,20 +46,38 @@ class Logger(
         if (level >= 1) {
             stderr(msg)
         }
+        if (isDebugging) {
+            debugLog(msg)
+        }
     }
 
     fun verbose2(msg: String) {
         if (level >= 2) {
             stderr(msg)
         }
+        if (isDebugging) {
+            debugLog(msg)
+        }
+    }
+
+    private fun debugLog(msg: String) {
+        println(msg)
     }
 
     companion object {
+        const val MAX_VERBOSITY = 2
         private const val GREEN = "\u001B[32m"
         private const val RED = "\u001B[31m"
         private const val RESET = "\u001B[0m"
         fun red(text: String) = "$RED$text$RESET"
 
         fun green(text: String) = "$GREEN$text$RESET"
+
+        private val isDebugging by lazy {
+            ProcessHandle.current().info()
+                .arguments().map { args ->
+                    args.any { it.startsWith("-agentlib:jdwp") }
+                }.get()
+        }
     }
 }

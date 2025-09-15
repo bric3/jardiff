@@ -20,6 +20,7 @@ import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Model.CommandSpec
 import picocli.CommandLine.Option
+import picocli.CommandLine.ParameterException
 import picocli.CommandLine.Parameters
 import picocli.CommandLine.RunLast
 import picocli.CommandLine.Spec
@@ -90,9 +91,8 @@ class Main : Runnable {
         names = ["-v"],
         description = [
             "Specify multiple -v options to increase verbosity.",
-            "For example, `-v -v -v` or `-vvv`"
-        ],
-        arity = "0..3"
+            "For example, '-v -v' or '-vv'."
+        ]
     )
     var verbosity = booleanArrayOf()
 
@@ -103,6 +103,12 @@ class Main : Runnable {
 
     private fun executionStrategy(parseResult: CommandLine.ParseResult): Int {
         // init logger
+        if (verbosity.size > Logger.MAX_VERBOSITY) {
+            throw ParameterException(
+                spec.commandLine(),
+                "Too many '-v', maximum ${Logger.MAX_VERBOSITY}."
+            )
+        }
         logger = Logger(
             spec.commandLine().out,
             spec.commandLine().err,

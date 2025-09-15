@@ -101,9 +101,8 @@ Compares two JAR files or directories and reports differences.
   -h, --help                 Show this help message and exit.
   -m, --output-mode=<mode>   Output mode, default: diff)
                              Possible outputs: simple, diff.
-  -v=[<verbosity> [<verbosity> [<verbosity>]]]
-                             Specify multiple -v options to increase verbosity.
-                             For example, `-v -v -v` or `-vvv`
+  -v                         Specify multiple -v options to increase verbosity.
+                             For example, `-v -v` or `-vv`
   -V, --version              Print version information and exit.
 ```
 
