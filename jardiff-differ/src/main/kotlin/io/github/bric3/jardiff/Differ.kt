@@ -18,6 +18,7 @@ import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.simple
 import java.io.Closeable
+import java.io.IOException
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
@@ -83,8 +84,6 @@ class Differ(
             .asSequence()
             .sorted()
             .map { path ->
-                // TODO relace this code by a proper of ClassFileEntry type,
-                //  and by a regular FileEntry
                 when {
                     path.extension in classExtensions -> {
                         CoalescedClassEntry(
@@ -99,39 +98,44 @@ class Differ(
                 }
 
             }
-            .distinct()
 
+        val coalescedEntries = mutableSetOf<CoalescedClassEntry>()
         return buildList {
             allKeys.forEach { entry ->
                 when (entry) {
                     is CoalescedClassEntry -> {
-                        // TODO then here if ClassFileEntry, checks the left and right entries
-                        //  bailout coalescing if multiple file exist on the same side.
-
                         val aliasedPaths = classExtensions.map {
                             Path.of(entry.parentPath, "${entry.classFileName}.$it")
                         }
 
-                        // do not coalesce if multiple on the same side
                         val leftClasses = aliasedPaths.mapNotNull { leftEntries[it] }
                         val rightClasses = aliasedPaths.mapNotNull { rightEntries[it] }
 
-                        if ((leftClasses.count() <= 1) or (rightClasses.count() <= 1)) {
-                            add(
-                                FileEntryToDiff(
-                                    Path.of(entry.parentPath, "${entry.classFileName}.class").toString(),
-                                    leftClasses.singleOrNull(),
-                                    rightClasses.singleOrNull(),
+                        // do not coalesce if multiple entries on the same side
+                        when {
+                            (leftClasses.count() <= 1) and (rightClasses.count() <= 1) -> {
+                                // entry can be coalesced, but only if it wasn't already added
+                                if (coalescedEntries.add(entry)) {
+                                    logger.verbose2("Coalesced entry ${entry.originalPath}")
+                                    add(
+                                        FileEntryToDiff(
+                                            Path.of(entry.parentPath, "${entry.classFileName}.class").toString(),
+                                            leftClasses.singleOrNull(),
+                                            rightClasses.singleOrNull(),
+                                        )
+                                    )
+                                }
+                            }
+                            else -> {
+                                logger.verbose2("Coalescing disabled for ${entry.originalPath} due to multiple files one one side")
+                                add(
+                                    FileEntryToDiff(
+                                        entry.originalPath.toString(),
+                                        leftEntries[entry.originalPath],
+                                        rightEntries[entry.originalPath],
+                                    )
                                 )
-                            )
-                        } else {
-                            add(
-                                FileEntryToDiff(
-                                    entry.originalPath.toString(),
-                                    leftEntries[entry.originalPath],
-                                    rightEntries[entry.originalPath],
-                                )
-                            )
+                            }
                         }
                     }
 
@@ -194,7 +198,7 @@ class Differ(
         childCloseables.forEach {
             try {
                 it.close()
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 logger.stderr("Error closing resource: ${e.message}")
             }
         }
