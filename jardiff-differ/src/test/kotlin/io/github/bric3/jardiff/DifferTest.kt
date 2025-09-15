@@ -25,7 +25,7 @@ class DifferTest {
     lateinit var tempDir: Path
 
     @Test
-    fun `should detect no differences in same jar with simple mode`() {
+    fun `should detect no differences in same jar using simple mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
@@ -43,7 +43,7 @@ class DifferTest {
     }
 
     @Test
-    fun `should detect no differences in same jar with diff mode`() {
+    fun `should detect differences in same jar using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
@@ -56,7 +56,7 @@ class DifferTest {
     }
 
     @Test
-    fun `should detect single differences between jar and directory with simple mode`() {
+    fun `should detect differences between jar and directory using simple mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
@@ -75,7 +75,7 @@ class DifferTest {
     }
 
     @Test
-    fun `should detect single differences between jar and directory with diff mode`() {
+    fun `should detect single differences between jar and directory using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
@@ -101,7 +101,7 @@ class DifferTest {
     }
 
     @Test
-    fun `should collapse classes with different extension with simple mode`() {
+    fun `should find no difference on coalesced classes using simple mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
@@ -126,7 +126,7 @@ class DifferTest {
     }
 
     @Test
-    fun `should collapse classes with different extension with diff mode`() {
+    fun `should find no difference on coalesced classes using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
             FooFixtureClass::class.java.classLoader,
