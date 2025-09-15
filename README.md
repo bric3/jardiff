@@ -89,7 +89,7 @@ Usage: jardiff [-hVv] [-m=<mode>] [-ce=<extension>[,<extension>...]]...
 Compares two JAR files or directories and reports differences.
       <left>                 The JAR file or directory to compare.
       <right>                The JAR file or directory to compare.
-      -ce, --class-exts, --coalesce-classe-exts=<extension>[,<extension>...]
+  -c, --class-exts, --coalesce-classe-exts=<extension>[,<extension>...]
                              Coalesce class files with the given extensions, in
                              addition to the usual 'class', i.e. makes classes
                              named 'Foo.class' and 'Foo.bin' aliased to the same

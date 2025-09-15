@@ -72,7 +72,7 @@ class Main : Runnable {
     var outputMode = OutputMode.diff
 
     @Option(
-        names = ["-ce", "--class-exts", "--coalesce-classe-exts"],
+        names = ["-c", "--class-exts", "--coalesce-classe-exts"],
         arity = "1",
         paramLabel = "<extension>",
         description = [
