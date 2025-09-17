@@ -65,7 +65,7 @@ class Main : Runnable {
         arity = "1",
         paramLabel = "<mode>",
         description = [
-            "Output mode, default: \${DEFAULT-VALUE})",
+            "Output mode, default: \${DEFAULT-VALUE}",
             "Possible outputs: \${COMPLETION-CANDIDATES}."
         ]
     )
