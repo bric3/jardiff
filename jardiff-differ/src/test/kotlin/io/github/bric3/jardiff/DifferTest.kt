@@ -14,6 +14,7 @@ import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.simple
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -282,6 +283,7 @@ class DifferTest {
         Differ(
             logger = Logger(output, StringWriter(), verbosity(0)),
             outputMode = outputMode,
+            classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, left),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, right),
             excludes = excludes,

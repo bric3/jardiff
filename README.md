@@ -59,7 +59,9 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 
 * Compare JARs and directories recursively
 * Line-based diffs for each files
-* Class file comparison using ASM's Textify
+* Class file comparison using different stratgey to produce text
+   * ASM's Textify (_default_)
+   * Class File Version only
 * Binary diff as sha-1 hashes 
 * Exclude glob patterns (for the relative paths inside the jars/directories)
 
@@ -84,8 +86,8 @@ Build it `./gradlew build`, then run it:
 
 ```shell
 $ java -jar jardiff/build/shadowed-app/jardiff-0.1.0-SNAPSHOT.jar -h
-Usage: jardiff [-hVv] [-m=<mode>] [-ce=<extension>[,<extension>...]]...
-               [-e=<glob>]... <left> <right>
+Usage: jardiff [-hVv] [--class-text-producer=<tool>] [-m=<mode>] [-c=<extension>
+               [,<extension>...]]... [-e=<glob>]... <left> <right>
 Compares two JAR files or directories and reports differences.
       <left>                 The JAR file or directory to compare.
       <right>                The JAR file or directory to compare.
@@ -96,13 +98,18 @@ Compares two JAR files or directories and reports differences.
                              file same entry. Also this enables the file to be
                              compared on bytecode level Takes a comma separated
                              list, e.g. 'classdata' or 'raw,bin,clazz'.
+      --class-text-producer=<tool>
+                             Tool used to produce class text, possible values:
+                             asm-textifier, class-file-version
+                             Default: 'asm-textifier'
   -e, --exclude=<glob>       A glob exclude pattern, e.g.
-                             '**/raw*/**', or '**/*.bin'
+                             '**/raw*/**', or '**/*.bin'.
   -h, --help                 Show this help message and exit.
-  -m, --output-mode=<mode>   Output mode, default: diff)
-                             Possible outputs: simple, diff.
+  -m, --output-mode=<mode>   Output mode, possible values:
+                             simple, diff
+                             Default: 'diff'
   -v                         Specify multiple -v options to increase verbosity.
-                             For example, `-v -v` or `-vv`
+                             For example, '-v -v' or '-vv'.
   -V, --version              Print version information and exit.
 ```
 

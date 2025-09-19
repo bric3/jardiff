@@ -10,10 +10,10 @@
 
 package io.github.bric3.jardiff
 
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.apache.tika.parser.txt.CharsetDetector
 import java.io.BufferedInputStream
 import java.io.InputStream
-import java.io.StringWriter
 import java.nio.charset.Charset
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -26,6 +26,7 @@ object FileReader {
 
     fun readFileAsTextIfPossible(
         fileAccess: FileAccess?,
+        classTextifierProducer: ClassTextifierProducer,
         additionalClassExtensions: Set<String> = emptySet()
     ): List<String> {
         if (fileAccess == null) {
@@ -41,7 +42,7 @@ object FileReader {
         fileAccess.bufferedInputStream.use {
             return runCatching {
                 when (fileAccess.relativePath.extension) {
-                    in classExtensions -> Result.success(asmTextifier(it))
+                    in classExtensions -> Result.success(classTextifierProducer.instance.toLines(it))
                     else -> {
                         // detect charset
                         val detector = CharsetDetector().setText(it)
@@ -88,13 +89,6 @@ object FileReader {
                 digest.update(buffer, 0, read)
             }
             digest.digest().joinToString("") { "%02x".format(it) }
-        }
-    }
-
-    private fun asmTextifier(inputStream: InputStream): List<String> {
-        return StringWriter().use { writer ->
-            AnyInputStreamTextifier.textify(writer, inputStream)
-            writer.toString().lines()
         }
     }
 

@@ -10,6 +10,7 @@
 
 package io.github.bric3.jardiff
 
+import io.github.bric3.jardiff.classes.ClassTextifierProducer.`asm-textifier`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -18,12 +19,13 @@ import java.nio.file.Path
 import java.util.jar.JarFile
 import kotlin.random.Random
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class FileReaderTest {
     @Test
     fun `should textify class from jar`() {
         val fileAccess =
             FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), JarFile(fixtureJar.toFile()))
-        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
@@ -31,7 +33,7 @@ class FileReaderTest {
     @Test
     fun `should textify class from directory`() {
         val fileAccess = FileAccess.FromDirectory(fixtureClassesOutput, Path.of(FooFixtureClass::class.path))
-        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
@@ -47,15 +49,15 @@ class FileReaderTest {
         )
 
         val fileAccess = FileAccess.FromDirectory(tempDir, binaryFile)
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
-        assertThat(textContent).element(0).asString().matches("BINARY FILE SHA-1: [0-9a-fA-F]{40}")
+        assertThat(textContent).element(0).asString().matches("FILE SHA-1: [0-9a-fA-F]{40}")
     }
 
     @Test
     fun `should properly read ISO-8859-1 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("iso8859-1.properties"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textContent).containsExactly(
             "#",
@@ -80,7 +82,7 @@ class FileReaderTest {
     @Test
     fun `should properly read UTF-8 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-8.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",
@@ -110,7 +112,7 @@ class FileReaderTest {
     @Test
     fun `should properly read UTF-16 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-16be.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textContent).containsExactly(
             "﻿> [!IMPORTANT]",
@@ -128,7 +130,7 @@ class FileReaderTest {
     @Test
     fun `should properly read US_ASCII text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("us-ascii.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",
@@ -143,7 +145,7 @@ class FileReaderTest {
     @Test
     fun `should properly read Windoes CP-1252 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("cp1252.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",

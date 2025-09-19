@@ -10,6 +10,7 @@
 
 package io.github.bric3.jardiff.app
 
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
 import io.github.bric3.jardiff.OutputMode
@@ -65,8 +66,9 @@ class Main : Runnable {
         arity = "1",
         paramLabel = "<mode>",
         description = [
-            "Output mode, default: \${DEFAULT-VALUE}",
-            "Possible outputs: \${COMPLETION-CANDIDATES}."
+            "Output mode, possible values:",
+            "\${COMPLETION-CANDIDATES}",
+            "Default: '\${DEFAULT-VALUE}'",
         ]
     )
     var outputMode = OutputMode.diff
@@ -86,6 +88,18 @@ class Main : Runnable {
         split = ","
     )
     var coalesceClassFileWithExtensions = emptySet<String>()
+
+    @Option(
+        names = ["--class-text-producer"],
+        arity = "1",
+        paramLabel = "<tool>",
+        description = [
+            "Tool used to produce class text, possible values:",
+            "\${COMPLETION-CANDIDATES}",
+            "Default: '\${DEFAULT-VALUE}'"
+        ]
+    )
+    var classTextifierProducer = ClassTextifierProducer.`asm-textifier`
 
     @Option(
         names = ["-v"],
@@ -133,6 +147,7 @@ class Main : Runnable {
         Differ(
             logger = logger,
             outputMode = outputMode,
+            classTextifierProducer = classTextifierProducer,
             left = left,
             right = right,
             excludes = excludes,

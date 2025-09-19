@@ -17,6 +17,7 @@ import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.simple
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import java.io.Closeable
 import java.io.IOException
 import java.nio.file.FileSystems
@@ -31,6 +32,7 @@ import kotlin.streams.asSequence
 class Differ(
     private val logger: Logger,
     private val outputMode: OutputMode,
+    private val classTextifierProducer: ClassTextifierProducer,
     private val left: PathToDiff,
     private val right: PathToDiff,
     private val excludes: Set<String> = emptySet(),
@@ -44,8 +46,8 @@ class Differ(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = readFileAsTextIfPossible(it.left, coalesceClassFileWithExtensions)
-            val rightLines = readFileAsTextIfPossible(it.right, coalesceClassFileWithExtensions)
+            val leftLines = readFileAsTextIfPossible(it.left, classTextifierProducer, coalesceClassFileWithExtensions)
+            val rightLines = readFileAsTextIfPossible(it.right, classTextifierProducer, coalesceClassFileWithExtensions)
 
             val patch = DiffUtils.diff(
                 leftLines,
