@@ -89,7 +89,7 @@ class Differ(
                 when {
                     path.extension in classExtensions -> {
                         CoalescedClassEntry(
-                            path.parent.pathString,
+                            path.parent?.pathString ?: "",
                             path.nameWithoutExtension,
                         ).apply {
                             originalPath = path
