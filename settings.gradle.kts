@@ -15,7 +15,6 @@ pluginManagement {
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     id("com.gradle.develocity") version "4.1.1"
-    id("org.kordamp.gradle.insight") version "0.54.0"
 }
 
 rootProject.name = "jardiff"
