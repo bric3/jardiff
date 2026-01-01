@@ -35,6 +35,7 @@ class Differ(
     private val classTextifierProducer: ClassTextifierProducer,
     private val left: PathToDiff,
     private val right: PathToDiff,
+    private val includes: Set<String> = emptySet(),
     private val excludes: Set<String> = emptySet(),
     private val coalesceClassFileWithExtensions: Set<String> = emptySet(),
 ) : AutoCloseable {
@@ -189,25 +190,51 @@ class Differ(
 
     private fun pathFilter(): (FileAccess) -> Boolean {
         val fileSystem = FileSystems.getDefault()
+
+        val includeMatchers = includes.map { pattern ->
+            val normalizedPattern = normalizePattern(pattern)
+            fileSystem.getPathMatcher("glob:$normalizedPattern")
+        }
+
         val excludeMatchers = excludes.map { pattern ->
-            // If pattern doesn't contain / or **, treat it as a filename pattern and prepend **/
-            // This makes simple patterns like "*.txt" match files anywhere in the tree
-            val normalizedPattern = when {
-                pattern.contains('/') -> pattern
-                pattern.startsWith("**") -> pattern
-                else -> "**/$pattern"
-            }
+            val normalizedPattern = normalizePattern(pattern)
             fileSystem.getPathMatcher("glob:$normalizedPattern")
         }
 
         return { file ->
-            excludeMatchers.none {
+            // If includes is specified, file must match at least one include pattern
+            val matchesInclude = if (includeMatchers.isEmpty()) {
+                true
+            } else {
+                includeMatchers.any { it.matches(file.relativePath) }
+            }
+
+            // Then check if file is excluded
+            val notExcluded = excludeMatchers.none {
                 it.matches(file.relativePath)
-            }.also { accepted ->
-                if (!accepted) {
+            }
+
+            val accepted = matchesInclude && notExcluded
+
+            if (!accepted) {
+                if (!matchesInclude) {
+                    logger.verbose2("Not included: ${file.relativePath}")
+                } else {
                     logger.verbose2("Excluded: ${file.relativePath}")
                 }
             }
+
+            accepted
+        }
+    }
+
+    private fun normalizePattern(pattern: String): String {
+        // If pattern doesn't contain / or **, treat it as a filename pattern and prepend **/
+        // This makes simple patterns like "*.txt" match files anywhere in the tree
+        return when {
+            pattern.contains('/') -> pattern
+            pattern.startsWith("**") -> pattern
+            else -> "**/$pattern"
         }
     }
 

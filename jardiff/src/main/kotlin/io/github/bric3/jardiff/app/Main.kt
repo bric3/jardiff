@@ -51,6 +51,19 @@ class Main : Callable<Int> {
     lateinit var right: String
 
     @Option(
+        names = ["-i", "--include"],
+        arity = "1",
+        paramLabel = "<glob>",
+        description = [
+            "Glob include patterns (comma separated), e.g.",
+            "'**/raw*/**', or '**/*.bin'."
+        ],
+        defaultValue = "",
+        split = ","
+    )
+    var includes = emptySet<String>()
+
+    @Option(
         names = ["-e", "--exclude"],
         arity = "1",
         paramLabel = "<glob>",
@@ -162,6 +175,7 @@ class Main : Callable<Int> {
             classTextifierProducer = classTextifierProducer,
             left = left,
             right = right,
+            includes = includes,
             excludes = excludes,
             coalesceClassFileWithExtensions = coalesceClassFileWithExtensions
         ).use {

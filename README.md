@@ -59,17 +59,18 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 
 * Compare JARs and directories recursively
 * Line-based diffs for each files
-* Class file comparison using different stratgey to produce text
+* Class file comparison using different strategy to produce text
    * ASM's Textify (_default_)
    * Class File Version only
 * Binary diff as sha-1 hashes 
+* Include glob patterns (for the relative paths inside the jars/directories)
 * Exclude glob patterns (for the relative paths inside the jars/directories)
+* Supports `--exit-code` for CI/CD pipelines
 
   _(fallback mechanism, for non class-files, non-decoded text files)_
 
 Unsupported at this time, if ever...
 * Nested jars
-* Include glob patterns
 * More advanced binary diffs, i.e. showing bytes differences.
 
   _This one is unlikely_
