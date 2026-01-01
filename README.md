@@ -62,6 +62,7 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 * Class file comparison using different strategy to produce text
    * ASM's Textify (_default_)
    * Class File Version only
+   * Class outline
 * Binary diff as sha-1 hashes 
 * Include glob patterns (for the relative paths inside the jars/directories)
 * Exclude glob patterns (for the relative paths inside the jars/directories)
@@ -71,6 +72,7 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 
 Unsupported at this time, if ever...
 * Nested jars
+* Ignoring debug information in class files (like line numbers, local variable names, etc.)
 * More advanced binary diffs, i.e. showing bytes differences.
 
   _This one is unlikely_
@@ -101,7 +103,7 @@ Compares two JAR files or directories and reports differences.
                              list, e.g. 'classdata' or 'raw,bin,clazz'.
       --class-text-producer=<tool>
                              Tool used to produce class text, possible values:
-                             asm-textifier, class-file-version
+                             asm-textifier, class-file-version, class-outline
                              Default: 'asm-textifier'
   -e, --exclude=<glob>[,<glob>...]
                              Glob exclude patterns (comma separated), e.g.
