@@ -17,13 +17,10 @@ repositories {
 }
 
 group = "io.github.bric3.jardiff"
-version = "0.1.0-SNAPSHOT"
 
-testing {
-    suites {
-        val test by getting(JvmTestSuite::class) {
-            useJUnitJupiter("5.12.1")
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
@@ -31,5 +28,15 @@ java {
     withSourcesJar()
     toolchain {
         languageVersion = JavaLanguageVersion.of(24)
+    }
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter("5.12.1")
+        }
     }
 }

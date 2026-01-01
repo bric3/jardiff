@@ -1,6 +1,6 @@
 [versions]
-gradlePlugin-kotlin = "2.2.0"
-gradlePlugin-shadow = "9.0.2"
+gradlePlugin-kotlin = "2.3.0"
+gradlePlugin-shadow = "9.3.0"
 
 picocli = "4.7.7"
 asm = "9.8"

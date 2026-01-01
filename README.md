@@ -80,9 +80,9 @@ Unsupported at this time, if ever...
 ## Usage
                  
 > [!CAUTION] 
-> This tool needs a JDK24 to build and run. Example with `mise`
+> This tool needs a JDK11 to build and run. Example with `mise`
 > ```shell
-> $ mise exec java@corretto-24 -- java -jar jardiff-0.1.0-SNAPSHOT.jar
+> $ mise exec java@corretto-11 -- java -jar jardiff-0.1.0-SNAPSHOT.jar
 > ```
 
 Build it `./gradlew build`, then run it:
