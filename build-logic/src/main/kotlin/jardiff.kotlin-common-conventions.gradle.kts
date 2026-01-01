@@ -10,6 +10,7 @@
 
 plugins {
     kotlin("jvm")
+    id("com.javiersc.semver")
 }
 
 repositories {

@@ -19,6 +19,7 @@ repositories {
 dependencies {
     implementation(libs.gradlePlugin.kotlin)
     implementation(libs.gradlePlugin.shadow)
+    implementation(libs.gradlePlugin.semver)
 
     // Gradle accessors classpath
     // see https://github.com/gradle/gradle/issues/15383#issuecomment-779893192
