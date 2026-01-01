@@ -15,11 +15,18 @@ plugins {
 }
 
 tasks {
+    jar {
+        enabled = false
+    }
+
     shadowJar {
         archiveBaseName = project.name
-        destinationDirectory = project.layout.buildDirectory.dir("shadowed-app")
         // removes the `-all` classifier from the artifact name
         archiveClassifier = ""
+    }
+
+    startScripts {
+        dependsOn(shadowJar)
     }
 
     // empty javadocJar to satisfy maven central requirements
