@@ -9,8 +9,12 @@ data object ClassFileMajorVersion : ClassTextifier() {
     override fun toLines(inputStream: InputStream): List<String> {
         return inputStream.use {
             val classMajorVersion = it.readNBytes(8)[7] and 0xFF.toByte()
-            val javaVersion = classMajorVersion.toInt() - CLASS_MAJOR_VERSION_OFFSET
-            listOf("class version: $classMajorVersion (Java $javaVersion)")
+            listOf(describeClassVersion(classMajorVersion.toInt()))
         }
+    }
+
+    internal fun describeClassVersion(classMajorVersion: Int): String {
+        val javaVersion = classMajorVersion - CLASS_MAJOR_VERSION_OFFSET
+        return "class version: $classMajorVersion (Java $javaVersion)"
     }
 }

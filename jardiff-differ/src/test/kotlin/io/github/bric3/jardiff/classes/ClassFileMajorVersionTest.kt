@@ -14,8 +14,8 @@ class ClassFileMajorVersionTest {
         fixtureClassInputStream(FooFixtureClass::class).use {
             assertThat(ClassFileMajorVersion.toText(it)).isEqualToIgnoringNewLines(
                 """
-                |class version: 68 (Java 24)
-                """.trimMargin()
+                class version: 68 (Java 24)
+                """.trimIndent()
             )
         }
     }

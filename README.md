@@ -61,8 +61,8 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 * Line-based diffs for each files
 * Class file comparison using different strategy to produce text
    * ASM's Textify (_default_)
+   * Class outline (version, is kotlin/groovy class, synthetic or bridge members)
    * Class File Version only
-   * Class outline
 * Binary diff as sha-1 hashes 
 * Include glob patterns (for the relative paths inside the jars/directories)
 * Exclude glob patterns (for the relative paths inside the jars/directories)

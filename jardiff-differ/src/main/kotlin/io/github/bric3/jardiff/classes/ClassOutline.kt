@@ -51,6 +51,9 @@ data object ClassOutline : ClassTextifier() {
                 hasPackage = true
             }
 
+            // Add class version comment
+            lines.add("// ${ClassFileMajorVersion.describeClassVersion(version)}")
+
             val modifiers = accessToModifiers(access, isClass = true)
             val classType = when {
                 (access and Opcodes.ACC_INTERFACE) != 0 -> "interface"
@@ -105,7 +108,8 @@ data object ClassOutline : ClassTextifier() {
             val modifiers = accessToModifiers(access, isClass = false)
             val type = Type.getType(descriptor).className
             val valueStr = if (value != null) " = $value" else ""
-            lines.add("  $modifiers$type $name$valueStr")
+            val syntheticComment = if ((access and Opcodes.ACC_SYNTHETIC) != 0) " // synthetic" else ""
+            lines.add("  $modifiers$type $name$valueStr$syntheticComment")
             return null
         }
 
@@ -116,8 +120,8 @@ data object ClassOutline : ClassTextifier() {
             signature: String?,
             exceptions: Array<out String>?
         ): MethodVisitor? {
-            // Skip synthetic methods like bridges and accessors
-            if ((access and Opcodes.ACC_SYNTHETIC) != 0 && (access and Opcodes.ACC_BRIDGE) != 0) {
+            // Skip static initializers
+            if (name == "<clinit>") {
                 return null
             }
 
@@ -130,14 +134,19 @@ data object ClassOutline : ClassTextifier() {
                 " throws ${exceptions.joinToString(", ") { it.replace('/', '.') }}"
             } else ""
 
+            // Build synthetic comment
+            val syntheticParts = mutableListOf<String>()
+            if ((access and Opcodes.ACC_SYNTHETIC) != 0) syntheticParts.add("synthetic")
+            if ((access and Opcodes.ACC_BRIDGE) != 0) syntheticParts.add("bridge")
+            val syntheticComment = if (syntheticParts.isNotEmpty()) {
+                " // ${syntheticParts.joinToString(", ")}"
+            } else ""
+
             val methodDecl = if (name == "<init>") {
                 // Constructor
-                "$modifiers$simpleClassName($params)$throwsClause"
-            } else if (name == "<clinit>") {
-                // Static initializer - usually skip
-                return null
+                "$modifiers$simpleClassName($params)$throwsClause$syntheticComment"
             } else {
-                "$modifiers$returnType $name($params)$throwsClause"
+                "$modifiers$returnType $name($params)$throwsClause$syntheticComment"
             }
 
             lines.add("  $methodDecl")
