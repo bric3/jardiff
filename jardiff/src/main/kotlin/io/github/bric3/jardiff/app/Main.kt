@@ -38,6 +38,9 @@ import kotlin.system.exitProcess
     description = ["Compares two JAR files or directories and reports differences."]
 )
 class Main : Callable<Int> {
+    // Note: Description lines should be at most 50 characters long
+    // for proper formatting in the help message by picocli.
+    
     @Parameters(
         index = "0",
         description = ["The JAR file or directory to compare."]
@@ -128,9 +131,9 @@ class Main : Callable<Int> {
     @Option(
         names = ["--exit-code"],
         description = [
-            "Make the program exit with codes similar to diff(1).",
-            "That is, it exits with 1 if there were differences and",
-            "0 means no differences."
+            "Make jardiff exit with codes similar to diff(1).",
+            "That is, it exits with 1 if there were differences",
+            "and 0 means no differences."
         ]
     )
     var exitCode = false

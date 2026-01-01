@@ -86,9 +86,9 @@ Unsupported at this time, if ever...
 Build it `./gradlew build`, then run it:
 
 ```shell
-$ java -jar jardiff/build/shadowed-app/jardiff-0.1.0-SNAPSHOT.jar -h
-Usage: jardiff [-hVv] [--class-text-producer=<tool>] [-m=<mode>] [-c=<extension>
-               [,<extension>...]]... [-e=<glob>]... <left> <right>
+Usage: jardiff [-hVv] [--exit-code] [--class-text-producer=<tool>] [-m=<mode>]
+               [-c=<extension>[,<extension>...]]... [-e=<glob>[,<glob>...]]...
+               [-i=<glob>[,<glob>...]]... <left> <right>
 Compares two JAR files or directories and reports differences.
       <left>                 The JAR file or directory to compare.
       <right>                The JAR file or directory to compare.
@@ -103,9 +103,16 @@ Compares two JAR files or directories and reports differences.
                              Tool used to produce class text, possible values:
                              asm-textifier, class-file-version
                              Default: 'asm-textifier'
-  -e, --exclude=<glob>       A glob exclude pattern, e.g.
+  -e, --exclude=<glob>[,<glob>...]
+                             Glob exclude patterns (comma separated), e.g.
                              '**/raw*/**', or '**/*.bin'.
+      --exit-code            Make jardiff exit with codes similar to diff(1).
+                             That is, it exits with 1 if there were differences
+                             and 0 means no differences.
   -h, --help                 Show this help message and exit.
+  -i, --include=<glob>[,<glob>...]
+                             Glob include patterns (comma separated), e.g.
+                             '**/raw*/**', or '**/*.bin'.
   -m, --output-mode=<mode>   Output mode, possible values:
                              simple, diff
                              Default: 'diff'
