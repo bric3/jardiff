@@ -272,6 +272,48 @@ class DifferTest {
         )
     }
 
+    @Test
+    fun `should return false when no differences found`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            FooFixtureClass::class.path
+        )
+
+        val hasDifferences = Differ(
+            logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
+            outputMode = simple,
+            classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
+            left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, singleClassJar),
+            right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),
+            excludes = emptySet(),
+            coalesceClassFileWithExtensions = emptySet(),
+        ).use { it.diff() }
+
+        assertThat(hasDifferences).isFalse()
+    }
+
+    @Test
+    fun `should return true when differences found`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            FooFixtureClass::class.path
+        )
+
+        val hasDifferences = Differ(
+            logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
+            outputMode = simple,
+            classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
+            left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, fixtureClassesOutput),
+            right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),
+            excludes = emptySet(),
+            coalesceClassFileWithExtensions = emptySet(),
+        ).use { it.diff() }
+
+        assertThat(hasDifferences).isTrue()
+    }
+
     private fun diff(
         outputMode: OutputMode,
         left: Path,

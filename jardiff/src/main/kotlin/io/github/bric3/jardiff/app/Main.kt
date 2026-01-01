@@ -27,6 +27,7 @@ import picocli.CommandLine.RunLast
 import picocli.CommandLine.Spec
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.Callable
 import kotlin.system.exitProcess
 
 
@@ -36,7 +37,7 @@ import kotlin.system.exitProcess
     version = ["jardiff 1.0"],
     description = ["Compares two JAR files or directories and reports differences."]
 )
-class Main : Runnable {
+class Main : Callable<Int> {
     @Parameters(
         index = "0",
         description = ["The JAR file or directory to compare."]
@@ -111,6 +112,16 @@ class Main : Runnable {
     )
     var verbosity = booleanArrayOf()
 
+    @Option(
+        names = ["--exit-code"],
+        description = [
+            "Make the program exit with codes similar to diff(1).",
+            "That is, it exits with 1 if there were differences and",
+            "0 means no differences."
+        ]
+    )
+    var exitCode = false
+
     @Spec
     lateinit var spec: CommandSpec
 
@@ -132,7 +143,7 @@ class Main : Runnable {
         return RunLast().execute(parseResult)
     }
 
-    override fun run() {
+    override fun call(): Int {
         val left = PathToDiff.of(LEFT, makePath(left))
         val right = PathToDiff.of(RIGHT, makePath(right))
 
@@ -141,11 +152,11 @@ class Main : Runnable {
             Comparing:
             * ${left.path}
             * ${right.path}
-            
+
             """.trimIndent()
         )
 
-        Differ(
+        val hasDifferences = Differ(
             logger = logger,
             outputMode = outputMode,
             classTextifierProducer = classTextifierProducer,
@@ -156,6 +167,8 @@ class Main : Runnable {
         ).use {
             it.diff()
         }
+
+        return if (exitCode && hasDifferences) 1 else 0
     }
 
     private fun makePath(it: String): Path = Path.of(it).also {

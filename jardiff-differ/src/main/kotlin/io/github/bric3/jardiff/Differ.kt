@@ -40,9 +40,11 @@ class Differ(
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
 
-    fun diff() {
+    fun diff(): Boolean {
         val leftEntries = fileEntries(left)
         val rightEntries = fileEntries(right)
+
+        var hasDifferences = false
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
@@ -62,6 +64,10 @@ class Differ(
                 4
             )
 
+            if (unifiedDiff.size > 0) {
+                hasDifferences = true
+            }
+
             when (outputMode) {
                 simple -> logger.stdout(
                     if (unifiedDiff.size > 0) {
@@ -74,6 +80,8 @@ class Differ(
                 diff -> unifiedDiff.forEach(logger::stdout)
             }
         }
+
+        return hasDifferences
     }
 
     private fun makeListOfFilesToDiff(
