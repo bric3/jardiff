@@ -181,8 +181,15 @@ class Differ(
 
     private fun pathFilter(): (FileAccess) -> Boolean {
         val fileSystem = FileSystems.getDefault()
-        val excludeMatchers = excludes.map {
-            fileSystem.getPathMatcher("glob:$it")
+        val excludeMatchers = excludes.map { pattern ->
+            // If pattern doesn't contain / or **, treat it as a filename pattern and prepend **/
+            // This makes simple patterns like "*.txt" match files anywhere in the tree
+            val normalizedPattern = when {
+                pattern.contains('/') -> pattern
+                pattern.startsWith("**") -> pattern
+                else -> "**/$pattern"
+            }
+            fileSystem.getPathMatcher("glob:$normalizedPattern")
         }
 
         return { file ->
