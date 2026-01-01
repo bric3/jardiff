@@ -54,10 +54,11 @@ class Main : Runnable {
         arity = "1",
         paramLabel = "<glob>",
         description = [
-            "A glob exclude pattern, e.g. ",
+            "Glob exclude patterns (comma separated), e.g. ",
             "'**/raw*/**', or '**/*.bin'."
         ],
-        defaultValue = ""
+        defaultValue = "",
+        split = ","
     )
     var excludes = emptySet<String>()
 
