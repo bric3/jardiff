@@ -17,7 +17,6 @@ plugins {
 }
 
 tasks {
-    val dokkaGeneratePublicationHtml by existing
     val dokkaGenerate by existing
 
     register<Jar>("javadocJar") {

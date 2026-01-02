@@ -2,7 +2,7 @@
 gradlePlugin-kotlin = "2.3.0"
 gradlePlugin-shadow = "9.3.0"
 gradlePlugin-semver = "0.9.0"
-gradlePlugin-dokka = "2.0.0"
+gradlePlugin-dokka = "2.1.0"
 
 picocli = "4.7.7"
 asm = "9.8"
