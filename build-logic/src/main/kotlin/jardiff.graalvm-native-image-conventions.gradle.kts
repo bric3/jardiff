@@ -34,14 +34,9 @@ graalvmNative {
                 "-H:+ReportExceptionStackTraces",
                 "-H:+PrintClassInitialization",
 
-                // Required for picocli - initialize at build time for faster startup
-                "--initialize-at-build-time=picocli",
-                
-                // Resource configuration for Tika and properties files
-                "--enable-url-protocols=http,https",
+                // Generic resource patterns (common across projects)
                 "-H:IncludeResources=.*\\.properties$",
                 "-H:IncludeResources=.*\\.xml$",
-                "-H:IncludeResources=org/apache/tika/.*",
 
                 // Optimization flags for fast startup
                 "-O3",
