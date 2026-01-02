@@ -37,7 +37,7 @@ class ClassOutlineTest {
                 """
                 package io.github.bric3.jardiff;
 
-                // class version: 68 (Java 24)
+                // class version: 55 (Java 11)
                 // Kotlin class
                 public final class FooFixtureClass {
                   public FooFixtureClass()
@@ -93,7 +93,7 @@ class ClassOutlineTest {
                 """
                 package io.github.bric3.jardiff;
 
-                // class version: 68 (Java 24)
+                // class version: 55 (Java 11)
                 public class TestClassWithSynthetics${'$'}GenericBridge implements java.lang.Comparable {
                   private java.lang.Comparable value
                   public TestClassWithSynthetics${'$'}GenericBridge(java.lang.Comparable)
@@ -113,7 +113,7 @@ class ClassOutlineTest {
                 """
                 package io.github.bric3.jardiff;
 
-                // class version: 68 (Java 24)
+                // class version: 55 (Java 11)
                 public class TestClassWithSynthetics${'$'}InnerClass {
                   final io.github.bric3.jardiff.TestClassWithSynthetics this${'$'}0 // synthetic
                   public TestClassWithSynthetics${'$'}InnerClass(io.github.bric3.jardiff.TestClassWithSynthetics)

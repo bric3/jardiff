@@ -96,7 +96,7 @@ class DifferTest {
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
             """.trimIndent()
         )
     }
@@ -153,7 +153,7 @@ class DifferTest {
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
             """.trimIndent()
         )
     }
@@ -178,7 +178,7 @@ class DifferTest {
         val output = diff(simple,
             FooFixtureClass::class.location,
             singleClassJar,
-            excludes = setOf("*.md", "*.properties"),
+            excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -212,7 +212,7 @@ class DifferTest {
         val output = diff(diff,
             FooFixtureClass::class.location,
             singleClassJar,
-            excludes = setOf("*.md", "*.properties"),
+            excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -227,17 +227,17 @@ class DifferTest {
             --- META-INF/jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: c4ab3f5c96ccba90c685717137ef543a3b2c30d9
+            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
             --- /dev/null
             +++ io/github/bric3/jardiff/FooFixtureClass.classdata
             @@ -0,0 +1,37 @@
-            +// class version 68.0 (68)
+            +// class version 55.0 (55)
             +// access flags 0x31
             +public final class io/github/bric3/jardiff/FooFixtureClass {
             +
             +  // compiled from: FooFixtureClass.kt
             +
-            +  @Lkotlin/Metadata;(mv={2, 2, 0}, k=1, xi=48, d1={"\u0000\u0012\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\u0008\u0003\n\u0002\u0010\u0002\n\u0000\u0018\u00002\u00020\u0001B\u0007\u00a2\u0006\u0004\u0008\u0002\u0010\u0003J\u0006\u0010\u0004\u001a\u00020\u0005\u00a8\u0006\u0006"}, d2={"Lio/github/bric3/jardiff/FooFixtureClass;", "", "<init>", "()V", "bar", "", "jardiff-differ_testFixtures"})
+            +  @Lkotlin/Metadata;(mv={2, 3, 0}, k=1, xi=48, d1={"\u0000\u0012\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\u0008\u0003\n\u0002\u0010\u0002\n\u0000\u0018\u00002\u00020\u0001B\u0007\u00a2\u0006\u0004\u0008\u0002\u0010\u0003J\u0006\u0010\u0004\u001a\u00020\u0005\u00a8\u0006\u0006"}, d2={"Lio/github/bric3/jardiff/FooFixtureClass;", "", "<init>", "()V", "bar", "", "jardiff-differ_testFixtures"})
             +
             +  // access flags 0x1
             +  public <init>()V

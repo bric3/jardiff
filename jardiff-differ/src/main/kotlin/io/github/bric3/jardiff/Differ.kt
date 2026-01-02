@@ -246,12 +246,12 @@ class Differ @JvmOverloads constructor(
     }
 
     private fun normalizePattern(pattern: String): String {
-        // If pattern doesn't contain / or **, treat it as a filename pattern and prepend **/
-        // This makes simple patterns like "*.txt" match files anywhere in the tree
+        // If pattern doesn't contain / or **, treat it as a filename pattern
+        // Use glob syntax {pattern,**/pattern} to match files at root level AND in subdirectories
         return when {
             pattern.contains('/') -> pattern
             pattern.startsWith("**") -> pattern
-            else -> "**/$pattern"
+            else -> "{$pattern,**/$pattern}"
         }
     }
 
