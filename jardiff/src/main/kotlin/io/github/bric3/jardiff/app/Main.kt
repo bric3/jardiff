@@ -178,8 +178,8 @@ class Main : Callable<Int> {
             classTextifierProducer = classTextifierProducer,
             left = left,
             right = right,
-            includes = includes,
-            excludes = excludes,
+            includes = includes.filterNot { it.isBlank() }.toSet(),
+            excludes = excludes.filterNot { it.isBlank() }.toSet(),
             coalesceClassFileWithExtensions = coalesceClassFileWithExtensions
         ).use {
             it.diff()
