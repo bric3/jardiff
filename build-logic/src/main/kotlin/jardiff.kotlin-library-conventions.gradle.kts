@@ -13,6 +13,18 @@ plugins {
     id("jardiff.kotlin-common-conventions")
     `java-library`
     `jvm-test-suite`
+    id("org.jetbrains.dokka")
+}
+
+tasks {
+    val dokkaGeneratePublicationHtml by existing
+    val dokkaGenerate by existing
+
+    register<Jar>("javadocJar") {
+        dependsOn(dokkaGenerate)
+        from(layout.buildDirectory.dir("dokka/html"))
+        archiveClassifier.set("javadoc")
+    }
 }
 
 testing {
