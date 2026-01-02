@@ -28,7 +28,7 @@ kotlin {
 java {
     withSourcesJar()
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11

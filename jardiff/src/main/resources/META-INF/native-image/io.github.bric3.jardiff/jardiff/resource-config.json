@@ -1,0 +1,16 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "org/apache/tika/.*"
+      },
+      {
+        "pattern": ".*\\.properties$"
+      },
+      {
+        "pattern": ".*\\.xml$"
+      }
+    ]
+  },
+  "bundles": []
+}

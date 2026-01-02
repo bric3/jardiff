@@ -1,0 +1,26 @@
+[
+  {
+    "name": "io.github.bric3.jardiff.app.Main",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "picocli.CommandLine$AutoHelpMixin",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.bric3.jardiff.OutputMode",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.bric3.jardiff.classes.ClassTextifierProducer",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  }
+]

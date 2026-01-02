@@ -10,6 +10,7 @@
 
 plugins {
     id("jardiff.kotlin-application-conventions")
+    id("jardiff.graalvm-native-image-conventions")
 }
 
 dependencies {

@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.gradlePlugin.shadow)
     implementation(libs.gradlePlugin.semver)
     implementation(libs.gradlePlugin.dokka)
+    implementation(libs.gradlePlugin.graalvm)
 
     // Gradle accessors classpath
     // see https://github.com/gradle/gradle/issues/15383#issuecomment-779893192
