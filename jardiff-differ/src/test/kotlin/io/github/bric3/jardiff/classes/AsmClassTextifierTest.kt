@@ -20,7 +20,7 @@ import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 
-class AsmTextifierTest {
+class AsmClassTextifierTest {
     @Test
     fun `textify classes by InputStream`() {
         fixtureClassInputStream(FooFixtureClass::class).use {

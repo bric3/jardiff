@@ -10,8 +10,22 @@
 
 package io.github.bric3.jardiff
 
+/**
+ * Output modes for the application.
+ */
 @Suppress("EnumEntryName") // used for cli
 enum class OutputMode {
+    /**
+     * Simple output mode.
+     *
+     * Only show whether files are identical or different.
+     */
     simple,
+
+    /**
+     * Detailed output mode.
+     *
+     * Show detailed differences between files.
+     */
     diff,
 }

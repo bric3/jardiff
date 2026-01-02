@@ -9,6 +9,11 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.io.Writer
 
+/**
+ * [ClassTextifier] implementation using ASM's [Textifier] to produce a text representation of a class file.
+ *
+ * @param skipDebug Whether to skip debug information (like line numbers and local variables)
+ */
 class AsmTextifier(private val skipDebug: Boolean = false) : ClassTextifier() {
     override fun toLines(inputStream: InputStream): List<String> {
         return StringWriter().use { writer ->

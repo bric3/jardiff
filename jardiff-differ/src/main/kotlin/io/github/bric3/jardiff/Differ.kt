@@ -29,6 +29,18 @@ import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.pathString
 import kotlin.streams.asSequence
 
+/**
+ * Build a diff engine to compares two paths (JAR files or directories) and reports differences.
+ *
+ * @param logger Logger for output messages.
+ * @param outputMode Mode for outputting differences.
+ * @param classTextifierProducer Producer for class textifiers.
+ * @param left Path to the left side of the diff.
+ * @param right Path to the right side of the diff.
+ * @param includes Set of glob patterns to include files.
+ * @param excludes Set of glob patterns to exclude files.
+ * @param coalesceClassFileWithExtensions Set of file extensions to coalesce with .class files.
+ */
 class Differ(
     private val logger: Logger,
     private val outputMode: OutputMode,
@@ -41,6 +53,11 @@ class Differ(
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
 
+    /**
+     * Perform the diff operation between the left and right paths.
+     *
+     * @return True if differences were found, false otherwise.
+     */
     fun diff(): Boolean {
         val leftEntries = fileEntries(left)
         val rightEntries = fileEntries(right)
