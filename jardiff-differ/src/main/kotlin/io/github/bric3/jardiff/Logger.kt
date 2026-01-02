@@ -20,7 +20,7 @@ import java.io.StringWriter
  * @param stderr Standard error writer
  * @param verbosity Verbosity levels as a boolean array
  */
-class Logger(
+class Logger @JvmOverloads constructor(
     private val stdout: PrintWriter,
     private val stderr: PrintWriter,
     verbosity: BooleanArray = booleanArrayOf(),

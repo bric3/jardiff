@@ -24,6 +24,7 @@ import kotlin.io.path.name
 object FileReader {
     private const val CHARSET_CONFIDENCE_THRESHOLD = 40
 
+    @JvmOverloads
     fun readFileAsTextIfPossible(
         fileAccess: FileAccess?,
         classTextifierProducer: ClassTextifierProducer,

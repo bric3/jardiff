@@ -41,7 +41,7 @@ import kotlin.streams.asSequence
  * @param excludes Set of glob patterns to exclude files.
  * @param coalesceClassFileWithExtensions Set of file extensions to coalesce with .class files.
  */
-class Differ(
+class Differ @JvmOverloads constructor(
     private val logger: Logger,
     private val outputMode: OutputMode,
     private val classTextifierProducer: ClassTextifierProducer,
