@@ -20,7 +20,7 @@ enum class OutputMode {
      *
      * Shows two-column XY status for each file (like git status --short).
      */
-    `stat-short`,
+    `status`,
 
     /**
      * Statistics output mode.

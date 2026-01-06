@@ -14,7 +14,7 @@ import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.stat
-import io.github.bric3.jardiff.OutputMode.`stat-short`
+import io.github.bric3.jardiff.OutputMode.`status`
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -34,7 +34,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(`stat-short`, singleClassJar, singleClassJar)
+        val output = diff(status, singleClassJar, singleClassJar)
 
         assertThat(output).isEqualTo(
             """
@@ -65,7 +65,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(`stat-short`, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(status, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
 
         assertThat(output).isEqualTo(
             """
@@ -111,9 +111,10 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(`stat-short`,
-            fixtureClassesOutput,
-            singleClassJar,
+        val output = diff(
+            outputMode = status,
+            left = fixtureClassesOutput,
+            right = singleClassJar,
             excludes = setOf("*.md", "*.properties"),
             coalesceClassFileWithExts = setOf("classdata")
         )
@@ -176,9 +177,10 @@ class DifferTest {
             FooFixtureClass::class.path, // keep the .class
         )
 
-        val output = diff(`stat-short`,
-            FooFixtureClass::class.location,
-            singleClassJar,
+        val output = diff(
+            outputMode = status,
+            left = FooFixtureClass::class.location,
+            right = singleClassJar,
             excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
             coalesceClassFileWithExts = setOf("classdata")
         )
@@ -303,7 +305,7 @@ class DifferTest {
 
         val hasDifferences = Differ(
             logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
-            outputMode = `stat-short`,
+            outputMode = status,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, singleClassJar),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),
@@ -324,7 +326,7 @@ class DifferTest {
 
         val hasDifferences = Differ(
             logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
-            outputMode = `stat-short`,
+            outputMode = status,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, fixtureClassesOutput),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),

@@ -17,7 +17,7 @@ import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.stat
-import io.github.bric3.jardiff.OutputMode.`stat-short`
+import io.github.bric3.jardiff.OutputMode.`status`
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import java.io.Closeable
 import java.io.IOException
@@ -89,7 +89,7 @@ class Differ @JvmOverloads constructor(
             }
 
             when (outputMode) {
-                `stat-short` -> {
+                status -> {
                     val status = when {
                         it.left == null && it.right != null -> "${red("D ")} ${it.path}"
                         it.left != null && it.right == null -> "${red(" D")} ${it.path}"
