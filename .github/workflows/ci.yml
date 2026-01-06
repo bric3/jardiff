@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, workflow]
   pull_request:
     branches: [main]
 
@@ -39,9 +39,8 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Build native image
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
-        run: ./gradlew nativeCompile
+#      - name: Build native image
+#        run: ./gradlew nativeCompile
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -89,7 +88,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
         id: artifacts
         run: |
-          JAR_FILE=$(find jardiff/build/libs -name "*-all.jar" -type f | head -n 1)
+          JAR_FILE=$(find jardiff/build/libs -name "*.jar" -type f | head -n 1)
           JAR_NAME=$(basename "$JAR_FILE")
           echo "jar_path=${JAR_FILE}" >> $GITHUB_OUTPUT
           echo "jar_name=${JAR_NAME}" >> $GITHUB_OUTPUT
