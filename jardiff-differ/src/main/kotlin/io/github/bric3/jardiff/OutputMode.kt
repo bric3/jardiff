@@ -16,11 +16,18 @@ package io.github.bric3.jardiff
 @Suppress("EnumEntryName") // used for cli
 enum class OutputMode {
     /**
-     * Simple output mode.
+     * Short status output mode.
      *
-     * Only show whether files are identical or different.
+     * Shows two-column XY status for each file (like git status --short).
      */
     `stat-short`,
+
+    /**
+     * Statistics output mode.
+     *
+     * Shows file-by-file statistics with additions/deletions (like git diff --stat).
+     */
+    stat,
 
     /**
      * Detailed output mode.

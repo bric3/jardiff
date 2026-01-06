@@ -13,6 +13,7 @@ package io.github.bric3.jardiff
 import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
+import io.github.bric3.jardiff.OutputMode.stat
 import io.github.bric3.jardiff.OutputMode.`stat-short`
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
@@ -273,6 +274,26 @@ class DifferTest {
     }
 
     @Test
+    fun `should show statistics using stat mode`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            FooFixtureClass::class.path
+        )
+
+        val output = diff(stat, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+
+        assertThat(output).isEqualTo(
+            """
+            | META-INF/MANIFEST.MF                               | 3 ${green("+++")}${red("")}
+            | META-INF/jardiff-differ_testFixtures.kotlin_module | 1 ${green("")}${red("-")}
+            | io/github/bric3/jardiff/FooFixtureClass.class      | 0
+            | 2 files changed, 3 insertions(+), 1 deletions(-)
+            """.trimMargin() // seems like trimIndent() eats the leading space if each has one.
+        )
+    }
+
+    @Test
     fun `should return false when no differences found`() {
         val singleClassJar = createJarFromResources(
             tempDir,
@@ -331,7 +352,7 @@ class DifferTest {
             excludes = excludes,
             coalesceClassFileWithExtensions = coalesceClassFileWithExts,
         ).use { it.diff() }
-        return output.toString().trim()
+        return output.toString().trimEnd()
     }
 
     private fun verbosity(level: Int) = BooleanArray(level)
