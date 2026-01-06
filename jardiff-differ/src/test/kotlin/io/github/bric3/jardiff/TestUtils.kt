@@ -22,6 +22,10 @@ import java.util.jar.Manifest
 import kotlin.io.path.extension
 import kotlin.reflect.KClass
 
+fun green(string: String): String = "${Logger.GREEN}$string${Logger.RESET}"
+
+fun red(string: String): String = "${Logger.RED}$string${Logger.RESET}"
+
 val KClass<*>.path: String
     get() {
         val simpleClassNameWithHostName = qualifiedName?.substring(java.packageName.length + 1)

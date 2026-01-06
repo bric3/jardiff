@@ -10,9 +10,10 @@
 
 package io.github.bric3.jardiff.output
 
+import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Logger
-import io.github.bric3.jardiff.Logger.Companion.green
-import io.github.bric3.jardiff.Logger.Companion.red
+import io.github.bric3.jardiff.green
+import io.github.bric3.jardiff.red
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.StringWriter
@@ -22,7 +23,7 @@ class StatusOutputFormatterTest {
     fun `should show D  when file missing on left`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
-        val logger = Logger(output, StringWriter(), booleanArrayOf())
+        val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
 
         formatter.onFileProcessed(
             logger,
@@ -36,7 +37,7 @@ class StatusOutputFormatterTest {
     fun `should show  D when file missing on right`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
-        val logger = Logger(output, StringWriter(), booleanArrayOf())
+        val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
 
         formatter.onFileProcessed(
             logger,
@@ -50,7 +51,7 @@ class StatusOutputFormatterTest {
     fun `should show M  when file modified`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
-        val logger = Logger(output, StringWriter(), booleanArrayOf())
+        val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
 
         formatter.onFileProcessed(
             logger,
@@ -64,7 +65,7 @@ class StatusOutputFormatterTest {
     fun `should show    when file unchanged`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
-        val logger = Logger(output, StringWriter(), booleanArrayOf())
+        val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
 
         formatter.onFileProcessed(
             logger,
@@ -78,7 +79,7 @@ class StatusOutputFormatterTest {
     fun `should show multiple files correctly`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
-        val logger = Logger(output, StringWriter(), booleanArrayOf())
+        val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
 
         formatter.onFileProcessed(
             logger,

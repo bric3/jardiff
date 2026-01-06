@@ -10,8 +10,7 @@
 
 package io.github.bric3.jardiff
 
-import io.github.bric3.jardiff.Logger.Companion.green
-import io.github.bric3.jardiff.OutputMode.`status`
+import io.github.bric3.jardiff.OutputMode.status
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -32,7 +31,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("*.properties", "META-INF/MANIFEST.MF")
@@ -48,7 +47,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("META-INF/**")
@@ -66,7 +65,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("**/MANIFEST.MF", "**/*.kotlin_module")
@@ -83,7 +82,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("*.md", "*.properties", "META-INF/**")
@@ -105,7 +104,7 @@ class DifferFilterTest {
             )
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 singleClassJar,
                 excludes = setOf("META-INF/**")
@@ -123,7 +122,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("**/jardiff*.kotlin_module")
@@ -138,7 +137,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("**/*.class")
@@ -153,7 +152,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("**/github/**/*Fixture*.class")
@@ -173,7 +172,7 @@ class DifferFilterTest {
             )
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 singleClassJar,
                 excludes = emptySet()
@@ -189,7 +188,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 excludes = setOf("META-INF/**", "**/*.class")
@@ -208,7 +207,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.class")
@@ -224,7 +223,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("META-INF/**")
@@ -240,7 +239,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.class", "**/MANIFEST.MF")
@@ -256,7 +255,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/github/**/*Fixture*.class")
@@ -272,7 +271,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("*.class")
@@ -287,7 +286,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.nonexistent")
@@ -301,7 +300,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = emptySet()
@@ -321,7 +320,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("META-INF/**"),
@@ -338,7 +337,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.class"),
@@ -355,7 +354,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.class", "META-INF/**"),
@@ -372,7 +371,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/*.class"),
@@ -388,7 +387,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("META-INF/**"),
@@ -405,7 +404,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = setOf("**/github/**"),
@@ -421,7 +420,7 @@ class DifferFilterTest {
             val jarWithClass = createJarWithClass()
 
             val output = diff(
-                `status`,
+                status,
                 fixtureClassesOutput,
                 jarWithClass,
                 includes = emptySet(),
@@ -452,7 +451,7 @@ class DifferFilterTest {
     ): String {
         val output = StringWriter()
         Differ(
-            logger = Logger(output, StringWriter(), verbosity(0)),
+            logger = Logger(output, StringWriter(), verbosity(0), ColorMode.always),
             outputMode = outputMode,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, left),

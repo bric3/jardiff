@@ -111,9 +111,9 @@ class Logger @JvmOverloads constructor(
 
     companion object {
         const val MAX_VERBOSITY = 2
-        private const val GREEN = "\u001B[32m"
-        private const val RED = "\u001B[31m"
-        private const val RESET = "\u001B[0m"
+        const val GREEN = "\u001B[32m"
+        const val RED = "\u001B[31m"
+        const val RESET = "\u001B[0m"
 
         private val isDebugging by lazy {
             ProcessHandle.current().info()
