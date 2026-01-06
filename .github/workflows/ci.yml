@@ -48,7 +48,7 @@ jobs:
         if: success()
         with:
           name: jardiff-jar
-          path: jardiff/build/libs/*-all.jar
+          path: jardiff/build/libs/*.jar
           retention-days: 7
 
       - name: Publish Test Report
