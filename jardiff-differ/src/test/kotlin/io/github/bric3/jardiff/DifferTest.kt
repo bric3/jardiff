@@ -13,7 +13,7 @@ package io.github.bric3.jardiff
 import io.github.bric3.jardiff.Logger.Companion.green
 import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
-import io.github.bric3.jardiff.OutputMode.simple
+import io.github.bric3.jardiff.OutputMode.`stat-short`
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -33,12 +33,12 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(simple, singleClassJar, singleClassJar)
+        val output = diff(`stat-short`, singleClassJar, singleClassJar)
 
         assertThat(output).isEqualTo(
             """
-            ${green("✔")}️ META-INF/MANIFEST.MF
-            ${green("✔")}️ io/github/bric3/jardiff/FooFixtureClass.class
+            ${green("  ")} META-INF/MANIFEST.MF
+            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
     }
@@ -64,13 +64,13 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(simple, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(`stat-short`, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
 
         assertThat(output).isEqualTo(
             """
-            ${red("⨯")} META-INF/MANIFEST.MF
-            ${red("⨯")} META-INF/jardiff-differ_testFixtures.kotlin_module
-            ${green("✔")}️ io/github/bric3/jardiff/FooFixtureClass.class
+            ${red("D ")} META-INF/MANIFEST.MF
+            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
     }
@@ -110,7 +110,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(simple,
+        val output = diff(`stat-short`,
             fixtureClassesOutput,
             singleClassJar,
             excludes = setOf("*.md", "*.properties"),
@@ -119,9 +119,9 @@ class DifferTest {
 
         assertThat(output).describedAs("no class differences").isEqualTo(
             """
-            ${red("⨯")} META-INF/MANIFEST.MF
-            ${red("⨯")} META-INF/jardiff-differ_testFixtures.kotlin_module
-            ${green("✔")}️ io/github/bric3/jardiff/FooFixtureClass.class
+            ${red("D ")} META-INF/MANIFEST.MF
+            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
     }
@@ -175,7 +175,7 @@ class DifferTest {
             FooFixtureClass::class.path, // keep the .class
         )
 
-        val output = diff(simple,
+        val output = diff(`stat-short`,
             FooFixtureClass::class.location,
             singleClassJar,
             excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
@@ -184,10 +184,10 @@ class DifferTest {
 
         assertThat(output).describedAs("no class differences").isEqualTo(
             """
-            ${red("⨯")} META-INF/MANIFEST.MF
-            ${red("⨯")} META-INF/jardiff-differ_testFixtures.kotlin_module
-            ${green("✔")}️ io/github/bric3/jardiff/FooFixtureClass.class
-            ${red("⨯")} io/github/bric3/jardiff/FooFixtureClass.classdata
+            ${red("M ")} META-INF/MANIFEST.MF
+            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
+            ${red("D ")} io/github/bric3/jardiff/FooFixtureClass.classdata
             """.trimIndent()
         )
     }
@@ -282,7 +282,7 @@ class DifferTest {
 
         val hasDifferences = Differ(
             logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
-            outputMode = simple,
+            outputMode = `stat-short`,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, singleClassJar),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),
@@ -303,7 +303,7 @@ class DifferTest {
 
         val hasDifferences = Differ(
             logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
-            outputMode = simple,
+            outputMode = `stat-short`,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, fixtureClassesOutput),
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, singleClassJar),

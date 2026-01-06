@@ -20,7 +20,7 @@ enum class OutputMode {
      *
      * Only show whether files are identical or different.
      */
-    simple,
+    `stat-short`,
 
     /**
      * Detailed output mode.

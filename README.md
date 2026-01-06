@@ -46,11 +46,13 @@ Example output in `diff` mode (the default):
      ANEWARRAY java/lang/String
 ```
 
-Or with the `simple` mode
+Or with the `stat` mode
 
 ```
-⨯ foo/bar/qux/Baz.class
-✔ foo/bar/qux/Zorg.class
+D  foo/bar/qux/Zuul.class
+ D foo/bar/qux/Zig.class
+M  foo/bar/qux/Baz.class
+   foo/bar/qux/Zorg.class
 ```
 
 ## Features
