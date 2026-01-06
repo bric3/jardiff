@@ -18,6 +18,7 @@ import io.github.bric3.jardiff.PathToDiff
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
 import picocli.CommandLine
+import picocli.CommandLine.ArgGroup
 import picocli.CommandLine.Command
 import picocli.CommandLine.IVersionProvider
 import picocli.CommandLine.Model.CommandSpec
@@ -80,17 +81,34 @@ class Main : Callable<Int> {
     )
     var excludes = emptySet<String>()
 
-    @Option(
-        names = ["-m", "--output-mode"],
-        arity = "1",
-        paramLabel = "<mode>",
-        description = [
-            "Output mode, possible values:",
-            "\${COMPLETION-CANDIDATES}",
-            "Default: '\${DEFAULT-VALUE}'",
-        ]
-    )
-    var outputMode = OutputMode.diff
+    @ArgGroup(exclusive = true, multiplicity = "0..1")
+    var outputModeGroup: OutputModeGroup = OutputModeGroup()
+
+    class OutputModeGroup {
+        var mode: OutputMode = OutputMode.diff
+
+        @Option(
+            names = ["--status"],
+            description = [
+                "Show short status output (like 'git status --short').",
+                "Displays two-column XY status for each file."
+            ]
+        )
+        fun setStatus(value: Boolean) {
+            if (value) mode = OutputMode.status
+        }
+
+        @Option(
+            names = ["--stat"],
+            description = [
+                "Show statistics output (like 'git diff --stat').",
+                "Displays file-by-file statistics with additions/deletions."
+            ]
+        )
+        fun setStat(value: Boolean) {
+            if (value) mode = OutputMode.stat
+        }
+    }
 
     @Option(
         names = ["-c", "--class-exts", "--coalesce-classe-exts"],
@@ -175,7 +193,7 @@ class Main : Callable<Int> {
 
         val hasDifferences = Differ(
             logger = logger,
-            outputMode = outputMode,
+            outputMode = outputModeGroup.mode,
             classTextifierProducer = classTextifierProducer,
             left = left,
             right = right,
