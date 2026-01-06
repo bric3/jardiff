@@ -19,6 +19,7 @@ import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
 import picocli.CommandLine
 import picocli.CommandLine.Command
+import picocli.CommandLine.IVersionProvider
 import picocli.CommandLine.Model.CommandSpec
 import picocli.CommandLine.Option
 import picocli.CommandLine.ParameterException
@@ -34,7 +35,7 @@ import kotlin.system.exitProcess
 @Command(
     name = "jardiff",
     mixinStandardHelpOptions = true,
-    version = ["jardiff 1.0"],
+    versionProvider = Main.FromManifestVersionProvider::class,
     description = ["Compares two JAR files or directories and reports differences."]
 )
 class Main : Callable<Int> {
@@ -205,6 +206,18 @@ class Main : Callable<Int> {
                     .setExecutionStrategy(main::executionStrategy)
                     .execute(*args)
             )
+        }
+    }
+
+    class FromManifestVersionProvider : IVersionProvider {
+        override fun getVersion(): Array<String> {
+            val version = try {
+                // Reads from MANIFEST.MF Implementation-Version
+                FromManifestVersionProvider::class.java.`package`.implementationVersion ?: "unknown"
+            } catch (_: Exception) {
+                "unknown"
+            }
+            return arrayOf("jardiff $version")
         }
     }
 }

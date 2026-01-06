@@ -27,4 +27,13 @@ tasks {
     // use ./gradlew :app:run --args="arg1 arg2"
     val run by existing(JavaExec::class) {
     }
+
+    shadowJar {
+        manifest {
+            attributes(
+                "Implementation-Title" to project.name,
+                "Implementation-Version" to project.version
+            )
+        }
+    }
 }

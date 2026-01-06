@@ -19,13 +19,24 @@ dependencies {
     implementation(libs.tika)
 }
 
-tasks.test {
-    val fixtureJarPath = tasks.testFixturesJar.map { it.archiveFile.get().asFile.absolutePath }
-    val fixturesKotlinClassesPath = sourceSets.testFixtures.map { it.kotlin.classesDirectory.get().asFile.absolutePath }
-    val fixturesResourcesPath = sourceSets.testFixtures.map { it.output.resourcesDir }
-    doFirst {
-        systemProperties("text-fixtures.jar.path" to fixtureJarPath.get())
-        systemProperties("text-fixtures.kotlin.classes.path" to fixturesKotlinClassesPath.get())
-        systemProperties("text-fixtures.resources.path" to fixturesResourcesPath.get())
+tasks {
+    jar {
+        manifest {
+            attributes(
+                "Implementation-Title" to project.name,
+                "Implementation-Version" to project.version
+            )
+        }
+    }
+
+    test {
+        val fixtureJarPath = testFixturesJar.map { it.archiveFile.get().asFile.absolutePath }
+        val fixturesKotlinClassesPath = sourceSets.testFixtures.map { it.kotlin.classesDirectory.get().asFile.absolutePath }
+        val fixturesResourcesPath = sourceSets.testFixtures.map { it.output.resourcesDir }
+        doFirst {
+            systemProperties("text-fixtures.jar.path" to fixtureJarPath.get())
+            systemProperties("text-fixtures.kotlin.classes.path" to fixturesKotlinClassesPath.get())
+            systemProperties("text-fixtures.resources.path" to fixturesResourcesPath.get())
+        }
     }
 }
