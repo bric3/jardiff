@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, workflow]
+    branches: [main]
   pull_request:
     branches: [main]
 
 env:
-  RELEASE_BRANCH: workflow
+  RELEASE_BRANCH: main
 
 jobs:
   build:
