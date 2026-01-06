@@ -158,5 +158,5 @@ $ ./gradlew build
 
 ## License
 
-Mozila Public License, v. 2.0. See [LICENSE](LICENSE) for details.
+Mozilla Public License, v. 2.0. See [LICENSE](LICENSE) for details.
 
