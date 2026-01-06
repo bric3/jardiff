@@ -11,8 +11,6 @@
 package io.github.bric3.jardiff.output
 
 import io.github.bric3.jardiff.Logger
-import io.github.bric3.jardiff.Logger.Companion.green
-import io.github.bric3.jardiff.Logger.Companion.red
 
 /**
  * Status output formatter that shows a two-column XY status for each file.
@@ -26,10 +24,10 @@ import io.github.bric3.jardiff.Logger.Companion.red
 class StatusOutputFormatter : OutputFormatter() {
     override fun onFileProcessed(logger: Logger, data: FileComparisonData) {
         val status = when {
-            !data.leftExists && data.rightExists -> "${red("D ")} ${data.path}"
-            data.leftExists && !data.rightExists -> "${red(" D")} ${data.path}"
-            data.unifiedDiff.isNotEmpty() -> "${red("M ")} ${data.path}"
-            else -> "${green("  ")} ${data.path}"
+            !data.leftExists && data.rightExists -> "${logger.red("D ")} ${data.path}"
+            data.leftExists && !data.rightExists -> "${logger.red(" D")} ${data.path}"
+            data.unifiedDiff.isNotEmpty() -> "${logger.red("M ")} ${data.path}"
+            else -> "${logger.green("  ")} ${data.path}"
         }
         logger.stdout(status)
     }

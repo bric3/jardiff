@@ -11,8 +11,6 @@
 package io.github.bric3.jardiff.output
 
 import io.github.bric3.jardiff.Logger
-import io.github.bric3.jardiff.Logger.Companion.green
-import io.github.bric3.jardiff.Logger.Companion.red
 
 /**
  * Statistics output formatter that shows file-by-file statistics with additions/deletions.
@@ -83,7 +81,7 @@ class StatisticsOutputFormatter : OutputFormatter() {
             val additionsBar = "+".repeat((stat.additions.toDouble() / totalChanges * barWidth).toInt())
             val deletionsBar = "-".repeat(barWidth - additionsBar.length)
 
-            val changesStr = "$totalChanges ${green(additionsBar)}${red(deletionsBar)}"
+            val changesStr = "$totalChanges ${logger.green(additionsBar)}${logger.red(deletionsBar)}"
             logger.stdout(" ${stat.path.padEnd(maxPathLength)} | $changesStr")
         }
 

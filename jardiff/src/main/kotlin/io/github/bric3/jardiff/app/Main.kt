@@ -11,6 +11,7 @@
 package io.github.bric3.jardiff.app
 
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
+import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
 import io.github.bric3.jardiff.OutputMode
@@ -148,6 +149,18 @@ class Main : Callable<Int> {
     var verbosity = booleanArrayOf()
 
     @Option(
+        names = ["--color"],
+        arity = "1",
+        paramLabel = "<when>",
+        description = [
+            "Control when to use color output:",
+            "\${COMPLETION-CANDIDATES}",
+            "Default: '\${DEFAULT-VALUE}'"
+        ]
+    )
+    var colorMode = ColorMode.auto
+
+    @Option(
         names = ["--exit-code"],
         description = [
             "Make jardiff exit with codes similar to diff(1).",
@@ -174,6 +187,7 @@ class Main : Callable<Int> {
             spec.commandLine().out,
             spec.commandLine().err,
             verbosity,
+            colorMode
         )
         return RunLast().execute(parseResult)
     }

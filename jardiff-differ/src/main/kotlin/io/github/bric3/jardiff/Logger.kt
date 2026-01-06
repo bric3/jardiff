@@ -19,11 +19,13 @@ import java.io.StringWriter
  * @param stdout Standard output writer
  * @param stderr Standard error writer
  * @param verbosity Verbosity levels as a boolean array
+ * @param colorMode Color output mode for terminal display
  */
 class Logger @JvmOverloads constructor(
     private val stdout: PrintWriter,
     private val stderr: PrintWriter,
     verbosity: BooleanArray = booleanArrayOf(),
+    private val colorMode: ColorMode = ColorMode.auto,
 ) {
 
     /**
@@ -32,12 +34,14 @@ class Logger @JvmOverloads constructor(
     constructor(
         stdout: StringWriter,
         stderr: StringWriter,
-        verbosity: BooleanArray
+        verbosity: BooleanArray,
+        colorMode: ColorMode = ColorMode.auto
     ) : this(
-        PrintWriter(stdout), PrintWriter(stderr), verbosity
+        PrintWriter(stdout), PrintWriter(stderr), verbosity, colorMode
     )
 
     private var level: Int
+    private val useColor: Boolean = colorMode.shouldUseColor()
 
     init {
         require(verbosity.size <= MAX_VERBOSITY)
@@ -89,27 +93,27 @@ class Logger @JvmOverloads constructor(
         debugLog(msg)
     }
 
+    /**
+     * Produce an ANSI red colorized text for terminal output.
+     *
+     * @param text The text to colorize
+     * @return The colorized text, or plain text if color is disabled
+     */
+    fun red(text: String) = if (useColor) "$RED$text$RESET" else text
+
+    /**
+     * Produce an ANSI green colorized text for terminal output.
+     *
+     * @param text The text to colorize
+     * @return The colorized text, or plain text if color is disabled
+     */
+    fun green(text: String) = if (useColor) "$GREEN$text$RESET" else text
+
     companion object {
         const val MAX_VERBOSITY = 2
         private const val GREEN = "\u001B[32m"
         private const val RED = "\u001B[31m"
         private const val RESET = "\u001B[0m"
-
-        /**
-         * Produce an ANSI red colorized text for terminal output.
-         *
-         * @param text The text to colorize
-         * @return The colorized text
-         */
-        fun red(text: String) = "$RED$text$RESET"
-
-        /**
-         * Produce an ANSI green colorized text for terminal output.
-         *
-         * @param text The text to colorize
-         * @return The colorized text
-         */
-        fun green(text: String) = "$GREEN$text$RESET"
 
         private val isDebugging by lazy {
             ProcessHandle.current().info()

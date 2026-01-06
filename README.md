@@ -92,39 +92,44 @@ Build it `./gradlew build`, then run it:
 ```shell
 $ jardiff --help
 Usage: jardiff [-hVv] [--exit-code] [--class-text-producer=<tool>]
-               [-c=<extension>[,<extension>...]]... [-e=<glob>[,<glob>...]]...
-               [-i=<glob>[,<glob>...]]... [--status | --stat] <left> <right>
+               [--color=<when>] [-c=<extension>[,<extension>...]]... [-e=<glob>
+               [,<glob>...]]... [-i=<glob>[,<glob>...]]... [--status | --stat]
+               <left> <right>
 Compares two JAR files or directories and reports differences.
-      <left>        The JAR file or directory to compare.
-      <right>       The JAR file or directory to compare.
+      <left>           The JAR file or directory to compare.
+      <right>          The JAR file or directory to compare.
   -c, --class-exts, --coalesce-classe-exts=<extension>[,<extension>...]
-                    Coalesce class files with the given extensions, in
-                    addition to the usual 'class', i.e. makes classes
-                    named 'Foo.class' and 'Foo.bin' aliased to the same
-                    file same entry. Also this enables the file to be
-                    compared on bytecode level Takes a comma separated
-                    list, e.g. 'classdata' or 'raw,bin,clazz'.
+                       Coalesce class files with the given extensions, in
+                       addition to the usual 'class', i.e. makes classes
+                       named 'Foo.class' and 'Foo.bin' aliased to the same
+                       file same entry. Also this enables the file to be
+                       compared on bytecode level Takes a comma separated
+                       list, e.g. 'classdata' or 'raw,bin,clazz'.
       --class-text-producer=<tool>
-                    Tool used to produce class text, possible values:
-                    asm-textifier, class-file-version, class-outline
-                    Default: 'asm-textifier'
+                       Tool used to produce class text, possible values:
+                       asm-textifier, class-file-version, class-outline
+                       Default: 'asm-textifier'
+      --color=<when>   Control when to use color output:
+                       always, auto, never
+                       Default: 'auto'
   -e, --exclude=<glob>[,<glob>...]
-                    Glob exclude patterns (comma separated), e.g.
-                    '**/raw*/**', or '**/*.bin'.
-      --exit-code   Make jardiff exit with codes similar to diff(1).
-                    That is, it exits with 1 if there were differences
-                    and 0 means no differences.
-  -h, --help        Show this help message and exit.
+                       Glob exclude patterns (comma separated), e.g.
+                       '**/raw*/**', or '**/*.bin'.
+      --exit-code      Make jardiff exit with codes similar to diff(1).
+                       That is, it exits with 1 if there were differences
+                       and 0 means no differences.
+  -h, --help           Show this help message and exit.
   -i, --include=<glob>[,<glob>...]
-                    Glob include patterns (comma separated), e.g.
-                    '**/raw*/**', or '**/*.bin'.
-      --stat        Show statistics output (like 'git diff --stat').
-                    Displays file-by-file statistics with additions/deletions.
-      --status      Show short status output (like 'git status --short').
-                    Displays two-column XY status for each file.
-  -v                Specify multiple -v options to increase verbosity.
-                    For example, '-v -v' or '-vv'.
-  -V, --version     Print version information and exit.
+                       Glob include patterns (comma separated), e.g.
+                       '**/raw*/**', or '**/*.bin'.
+      --stat           Show statistics output (like 'git diff --stat').
+                       Displays file-by-file statistics with
+                         additions/deletions.
+      --status         Show short status output (like 'git status --short').
+                       Displays two-column XY status for each file.
+  -v                   Specify multiple -v options to increase verbosity.
+                       For example, '-v -v' or '-vv'.
+  -V, --version        Print version information and exit.
 ```
 
 > [!TIP]
