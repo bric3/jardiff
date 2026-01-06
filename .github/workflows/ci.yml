@@ -93,10 +93,15 @@ jobs:
           echo "jar_path=${JAR_FILE}" >> $GITHUB_OUTPUT
           echo "jar_name=${JAR_NAME}" >> $GITHUB_OUTPUT
 
-          NATIVE_FILE=$(find jardiff/build/native -type f -executable | head -n 1)
-          NATIVE_NAME=$(basename "$NATIVE_FILE")
-          echo "native_path=${NATIVE_FILE}" >> $GITHUB_OUTPUT
-          echo "native_name=${NATIVE_NAME}" >> $GITHUB_OUTPUT
+          NATIVE_FILE=$(find jardiff/build/native -type f -executable 2>/dev/null | head -n 1)
+          if [ -n "$NATIVE_FILE" ]; then
+            NATIVE_NAME=$(basename "$NATIVE_FILE")
+            echo "native_path=${NATIVE_FILE}" >> $GITHUB_OUTPUT
+            echo "native_name=${NATIVE_NAME}" >> $GITHUB_OUTPUT
+            echo "has_native=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_native=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create or Update Draft Release
         if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
@@ -117,7 +122,15 @@ jobs:
           ## Downloads
 
           - **JAR**: \`${{ steps.artifacts.outputs.jar_name }}\` - Run with Java 25+
+          EOF
+
+          if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
+            cat >> release_notes.md << EOF
           - **Native Binary**: \`${{ steps.artifacts.outputs.native_name }}\` - Standalone executable
+          EOF
+          fi
+
+          cat >> release_notes.md << EOF
 
           ### Usage
 
@@ -125,12 +138,17 @@ jobs:
           \`\`\`bash
           java -jar ${{ steps.artifacts.outputs.jar_name }} --help
           \`\`\`
+          EOF
+
+          if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
+            cat >> release_notes.md << EOF
 
           **Native Binary**:
           \`\`\`bash
           ./${{ steps.artifacts.outputs.native_name }} --help
           \`\`\`
           EOF
+          fi
 
           # Check if draft release exists
           if gh release view $TAG --json isDraft --jq '.isDraft' 2>/dev/null | grep -q true; then
@@ -143,10 +161,16 @@ jobs:
             done
 
             # Upload new assets
-            gh release upload $TAG \
-              "${{ steps.artifacts.outputs.jar_path }}" \
-              "${{ steps.artifacts.outputs.native_path }}" \
-              --clobber
+            if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
+              gh release upload $TAG \
+                "${{ steps.artifacts.outputs.jar_path }}" \
+                "${{ steps.artifacts.outputs.native_path }}" \
+                --clobber
+            else
+              gh release upload $TAG \
+                "${{ steps.artifacts.outputs.jar_path }}" \
+                --clobber
+            fi
 
             # Update release notes
             gh release edit $TAG \
@@ -161,12 +185,20 @@ jobs:
             git push --delete origin $TAG 2>/dev/null || true
 
             # Create new draft release
-            gh release create $TAG \
-              "${{ steps.artifacts.outputs.jar_path }}" \
-              "${{ steps.artifacts.outputs.native_path }}" \
-              --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
-              --notes-file release_notes.md \
-              --draft
+            if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
+              gh release create $TAG \
+                "${{ steps.artifacts.outputs.jar_path }}" \
+                "${{ steps.artifacts.outputs.native_path }}" \
+                --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
+                --notes-file release_notes.md \
+                --draft
+            else
+              gh release create $TAG \
+                "${{ steps.artifacts.outputs.jar_path }}" \
+                --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
+                --notes-file release_notes.md \
+                --draft
+            fi
 
             echo "Draft release created"
           fi
