@@ -96,6 +96,7 @@ jobs:
       artifact-prefix: 'jardiff'
       gradle-task: 'nativeCompile'
       native-build-path: 'jardiff/build/native/nativeCompile'
+      os-matrix: '["ubuntu-latest", "macos-latest"]'
 
   release:
     needs: [config, native-build]
