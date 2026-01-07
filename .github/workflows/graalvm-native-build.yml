@@ -8,7 +8,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 
-# Reusable workflow for building GraalVM native images across multiple OSes
+# Reusable workflow for building a GraalVM native image across multiple OSes
+# Assumes single executable and gradle plugin org.graalvm.buildtools.native
 name: GraalVM Native Build
 
 on:
@@ -99,7 +100,9 @@ jobs:
           validate-wrappers: true
 
       - name: Build native image
-        run: ./gradlew ${{ inputs.gradle-task }}
+        # GraalVM Build Tools ot yet compatible with Gradle configuration cache
+        # https://github.com/graalvm/native-build-tools/issues/477
+        run: ./gradlew ${{ inputs.gradle-task }} --no-configuration-cache
 
       - name: Find and prepare native binary (Unix)
         id: prepare_unix
