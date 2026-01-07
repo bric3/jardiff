@@ -6,6 +6,18 @@
     "allDeclaredMethods": true
   },
   {
+    "name": "io.github.bric3.jardiff.app.Main$FromManifestVersionProvider",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.bric3.jardiff.app.Main$OutputModeGroup",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
     "name": "picocli.CommandLine$AutoHelpMixin",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
