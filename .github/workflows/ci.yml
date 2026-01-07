@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, workflow]
   pull_request:
     branches: [main]
 
 env:
-  RELEASE_BRANCH: main
+  RELEASE_BRANCH: workflow
 
 jobs:
   build:
@@ -39,9 +39,6 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Build native image
-        run: ./gradlew nativeCompile
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
         if: success()
@@ -70,8 +67,98 @@ jobs:
             jardiff-differ/build/reports/tests/
           retention-days: 7
 
+  native-build:
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: jardiff-linux-amd64
+          - os: macos-latest
+            platform: macos
+            artifact_name: jardiff-macos-amd64
+          - os: windows-latest
+            platform: windows
+            artifact_name: jardiff-windows-amd64.exe
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Build native image
+        run: ./gradlew nativeCompile
+
+      - name: Find and rename native binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          NATIVE_FILE=$(find jardiff/build/native -type f -perm +111 2>/dev/null | head -n 1)
+          if [ -n "$NATIVE_FILE" ]; then
+            cp "$NATIVE_FILE" "${{ matrix.artifact_name }}"
+            echo "Native binary found and renamed to ${{ matrix.artifact_name }}"
+          else
+            echo "No native binary found!"
+            exit 1
+          fi
+
+      - name: Find and rename native binary (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          NATIVE_FILE=$(find jardiff/build/native -type f -name "*.exe" 2>/dev/null | head -n 1)
+          if [ -n "$NATIVE_FILE" ]; then
+            cp "$NATIVE_FILE" "${{ matrix.artifact_name }}"
+            echo "Native binary found and renamed to ${{ matrix.artifact_name }}"
+          else
+            echo "No native binary found!"
+            exit 1
+          fi
+
+      - name: Upload native binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-${{ matrix.platform }}
+          path: ${{ matrix.artifact_name }}
+          retention-days: 7
+
+  release:
+    needs: native-build
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
       - name: Get version and prepare release info
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
         id: release_info
         run: |
           VERSION=$(./gradlew properties | grep "^version:" | awk '{print $2}')
@@ -84,31 +171,33 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
-      - name: Find JAR and native binary
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
-        id: artifacts
-        run: |
-          JAR_FILE=$(find jardiff/build/libs -name "*.jar" -type f | head -n 1)
-          JAR_NAME=$(basename "$JAR_FILE")
-          echo "jar_path=${JAR_FILE}" >> $GITHUB_OUTPUT
-          echo "jar_name=${JAR_NAME}" >> $GITHUB_OUTPUT
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: jardiff-jar
+          path: artifacts/jar
 
-          NATIVE_FILE=$(find jardiff/build/native -type f -executable 2>/dev/null | head -n 1)
-          if [ -n "$NATIVE_FILE" ]; then
-            NATIVE_NAME=$(basename "$NATIVE_FILE")
-            echo "native_path=${NATIVE_FILE}" >> $GITHUB_OUTPUT
-            echo "native_name=${NATIVE_NAME}" >> $GITHUB_OUTPUT
-            echo "has_native=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_native=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Download native binaries
+        uses: actions/download-artifact@v6
+        with:
+          pattern: native-*
+          path: artifacts/native
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "=== JAR artifacts ==="
+          ls -lh artifacts/jar/
+          echo "=== Native binaries ==="
+          ls -lh artifacts/native/
 
       - name: Create or Update Draft Release
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.release_info.outputs.tag }}"
+          JAR_FILE=$(find artifacts/jar -name "*.jar" -type f | head -n 1)
+          JAR_NAME=$(basename "$JAR_FILE")
 
           # Prepare release notes
           cat > release_notes.md << EOF
@@ -117,38 +206,31 @@ jobs:
           **Version:** ${{ steps.release_info.outputs.version }}
           **Commit:** ${{ github.sha }} (${{ steps.release_info.outputs.short_sha }})
           **Branch:** ${{ github.ref_name }}
-          **Built:** \$(date +'%Y-%m-%d %H:%M:%S UTC')
+          **Built:** $(date +'%Y-%m-%d %H:%M:%S UTC')
 
           ## Downloads
 
-          - **JAR**: \`${{ steps.artifacts.outputs.jar_name }}\` - Run with Java 25+
-          EOF
+          ### Universal JAR
+          - **${JAR_NAME}** - Run with Java 25+
+            \`\`\`bash
+            java -jar ${JAR_NAME} --help
+            \`\`\`
 
-          if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
-            cat >> release_notes.md << EOF
-          - **Native Binary**: \`${{ steps.artifacts.outputs.native_name }}\` - Standalone executable
-          EOF
-          fi
+          ### Native Binaries (no JVM required)
+          - **jardiff-linux-amd64** - Linux x86_64
+          - **jardiff-macos-amd64** - macOS x86_64/ARM64 (Apple Silicon)
+          - **jardiff-windows-amd64.exe** - Windows x86_64
 
-          cat >> release_notes.md << EOF
-
-          ### Usage
-
-          **JAR**:
+          **Usage:**
           \`\`\`bash
-          java -jar ${{ steps.artifacts.outputs.jar_name }} --help
+          # Linux/macOS
+          chmod +x jardiff-<platform>-amd64
+          ./jardiff-<platform>-amd64 --help
+
+          # Windows
+          jardiff-windows-amd64.exe --help
           \`\`\`
           EOF
-
-          if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
-            cat >> release_notes.md << EOF
-
-          **Native Binary**:
-          \`\`\`bash
-          ./${{ steps.artifacts.outputs.native_name }} --help
-          \`\`\`
-          EOF
-          fi
 
           # Check if draft release exists
           if gh release view $TAG --json isDraft --jq '.isDraft' 2>/dev/null | grep -q true; then
@@ -160,17 +242,11 @@ jobs:
               gh release delete-asset $TAG "$asset" -y || true
             done
 
-            # Upload new assets
-            if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
-              gh release upload $TAG \
-                "${{ steps.artifacts.outputs.jar_path }}" \
-                "${{ steps.artifacts.outputs.native_path }}" \
-                --clobber
-            else
-              gh release upload $TAG \
-                "${{ steps.artifacts.outputs.jar_path }}" \
-                --clobber
-            fi
+            # Upload all assets
+            gh release upload $TAG \
+              "$JAR_FILE" \
+              artifacts/native/* \
+              --clobber
 
             # Update release notes
             gh release edit $TAG \
@@ -185,20 +261,12 @@ jobs:
             git push --delete origin $TAG 2>/dev/null || true
 
             # Create new draft release
-            if [ "${{ steps.artifacts.outputs.has_native }}" = "true" ]; then
-              gh release create $TAG \
-                "${{ steps.artifacts.outputs.jar_path }}" \
-                "${{ steps.artifacts.outputs.native_path }}" \
-                --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
-                --notes-file release_notes.md \
-                --draft
-            else
-              gh release create $TAG \
-                "${{ steps.artifacts.outputs.jar_path }}" \
-                --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
-                --notes-file release_notes.md \
-                --draft
-            fi
+            gh release create $TAG \
+              "$JAR_FILE" \
+              artifacts/native/* \
+              --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
+              --notes-file release_notes.md \
+              --draft
 
             echo "Draft release created"
           fi
