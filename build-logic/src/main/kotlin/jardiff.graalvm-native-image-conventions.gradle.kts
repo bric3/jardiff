@@ -18,6 +18,28 @@ val graalvmLauncher = javaToolchains.launcherFor {
     nativeImageCapable = true
 }
 
+fun getTargetTriple(): String {
+    val osName = System.getProperty("os.name").lowercase()
+    val osArch = System.getProperty("os.arch").lowercase()
+
+    val arch = when (osArch) {
+        "amd64", "x86_64" -> "x86_64"
+        "aarch64", "arm64" -> "aarch64"
+        else -> osArch
+    }
+
+    return when {
+        osName.contains("mac") || osName.contains("darwin") -> "$arch-apple-darwin"
+        osName.contains("win") -> "$arch-windows-msvc"
+        osName.contains("nux") -> "$arch-linux-gnu"
+        else -> "$arch-unknown-unknown"
+    }
+}
+
+val isCI = providers.environmentVariable("CI")
+    .orElse(providers.environmentVariable("GITHUB_ACTIONS"))
+    .isPresent
+
 graalvmNative {
     toolchainDetection = true
 
@@ -25,7 +47,11 @@ graalvmNative {
         named("main") {
             javaLauncher.set(graalvmLauncher)
 
-            imageName = project.name
+            imageName = if (isCI) {
+                "${project.name}-${getTargetTriple()}"
+            } else {
+                project.name
+            }
             mainClass.set(application.mainClass)
 
             buildArgs.addAll(

@@ -45,11 +45,18 @@ object FileReader {
                 when (fileAccess.relativePath.extension) {
                     in classExtensions -> Result.success(classTextifierProducer.instance.toLines(it))
                     else -> {
+                        // Mark the stream so we can reset if needed
+                        it.mark(Int.MAX_VALUE)
+
                         // detect charset
                         val detector = CharsetDetector().setText(it)
                         val match = detector.detect()
                         val encodingHint = encodingHint(fileAccess.relativePath)
                         Logger.debugLog("Charset ${match.name} with ${match.confidence} confidence on $fileAccess")
+
+                        // Reset stream to beginning after charset detection consumed it
+                        it.reset()
+
                         if (match.confidence >= CHARSET_CONFIDENCE_THRESHOLD) {
                             Result.success(it.reader(Charset.forName(match.name)).readLines())
                         } else if(match.confidence < CHARSET_CONFIDENCE_THRESHOLD && encodingHint != null) {

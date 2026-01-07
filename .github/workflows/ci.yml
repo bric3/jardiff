@@ -1,0 +1,239 @@
+#
+# jardiff
+#
+# Copyright (c) 2025 - Brice Dutheil
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RELEASE_BRANCH: main
+
+jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      release-branch: ${{ steps.set-config.outputs.release-branch }}
+    steps:
+      - name: Set configuration
+        id: set-config
+        run: |
+          echo "release-branch=${{ env.RELEASE_BRANCH }}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        if: success()
+        with:
+          name: jardiff-jar
+          path: jardiff/build/libs/*.jar
+          retention-days: 7
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          report_paths: '**/build/test-results/**/TEST-*.xml'
+          check_name: Test Results
+          detailed_summary: true
+          include_passed: true
+          fail_on_failure: true
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: test-reports
+          path: |
+            jardiff/build/reports/tests/
+            jardiff-differ/build/reports/tests/
+          retention-days: 7
+
+  native-build:
+    needs: build
+    uses: ./.github/workflows/graalvm-native-build.yml
+    with:
+      java-version: '25'
+      artifact-prefix: 'jardiff'
+      gradle-task: 'nativeCompile'
+      native-build-path: 'jardiff/build/native/nativeCompile'
+      os-matrix: '["ubuntu-latest", "macos-latest"]'
+
+  release:
+    needs: [config, native-build]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', needs.config.outputs.release-branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Get version and prepare release info
+        id: release_info
+        run: |
+          VERSION=$(./gradlew properties | grep "^version:" | awk '{print $2}')
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          TAG="latest-build"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: jardiff-jar
+          path: artifacts/jar
+
+      - name: Download native binaries
+        uses: actions/download-artifact@v6
+        with:
+          pattern: native-*
+          path: artifacts/native
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "=== JAR artifacts ==="
+          ls -lh artifacts/jar/
+          echo "=== Native binaries ==="
+          ls -lh artifacts/native/
+
+      - name: Create or Update Draft Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.release_info.outputs.tag }}"
+          JAR_FILE=$(find artifacts/jar -name "*.jar" -type f | head -n 1)
+          JAR_NAME=$(basename "$JAR_FILE")
+
+          # Prepare release notes
+          cat > release_notes.md << EOF
+          Automated build from ${{ github.ref_name }}
+
+          **Version:** ${{ steps.release_info.outputs.version }}
+          **Commit:** ${{ github.sha }} (${{ steps.release_info.outputs.short_sha }})
+          **Branch:** ${{ github.ref_name }}
+          **Built:** $(date +'%Y-%m-%d %H:%M:%S UTC')
+
+          ## Downloads
+
+          ### Universal JAR
+          - **${JAR_NAME}** - Run with Java 25+
+            \`\`\`bash
+            java -jar ${JAR_NAME} --help
+            \`\`\`
+
+          ### Native Binaries (no JVM required)
+          - **jardiff-linux-amd64** - Linux x86_64
+          - **jardiff-macos-amd64** - macOS x86_64/ARM64 (Apple Silicon)
+          - **jardiff-windows-amd64.exe** - Windows x86_64
+
+          **Usage:**
+          \`\`\`bash
+          # Linux/macOS
+          chmod +x jardiff-<platform>-amd64
+          ./jardiff-<platform>-amd64 --help
+
+          # Windows
+          jardiff-windows-amd64.exe --help
+          \`\`\`
+          EOF
+
+          # Check if draft release exists
+          if gh release view $TAG --json isDraft --jq '.isDraft' 2>/dev/null | grep -q true; then
+            echo "Draft release exists, updating it..."
+
+            # Delete existing assets
+            gh release view $TAG --json assets --jq '.assets[].name' | while read -r asset; do
+              echo "Deleting asset: $asset"
+              gh release delete-asset $TAG "$asset" -y || true
+            done
+
+            # Upload all assets
+            gh release upload $TAG \
+              "$JAR_FILE" \
+              artifacts/native/* \
+              --clobber
+
+            # Update release notes
+            gh release edit $TAG \
+              --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
+              --notes-file release_notes.md
+
+            echo "Draft release updated"
+          else
+            echo "No draft release found, creating new one..."
+
+            # Delete tag if it exists but isn't a draft release
+            git push --delete origin $TAG 2>/dev/null || true
+
+            # Create new draft release
+            gh release create $TAG \
+              "$JAR_FILE" \
+              artifacts/native/* \
+              --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
+              --notes-file release_notes.md \
+              --draft
+
+            echo "Draft release created"
+          fi

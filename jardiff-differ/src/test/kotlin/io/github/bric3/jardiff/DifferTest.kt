@@ -10,11 +10,9 @@
 
 package io.github.bric3.jardiff
 
-import io.github.bric3.jardiff.Logger.Companion.green
-import io.github.bric3.jardiff.Logger.Companion.red
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.stat
-import io.github.bric3.jardiff.OutputMode.`status`
+import io.github.bric3.jardiff.OutputMode.status
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -304,7 +302,7 @@ class DifferTest {
         )
 
         val hasDifferences = Differ(
-            logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
+            logger = Logger(StringWriter(), StringWriter(), verbosity(0), ColorMode.always),
             outputMode = status,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, singleClassJar),
@@ -325,7 +323,7 @@ class DifferTest {
         )
 
         val hasDifferences = Differ(
-            logger = Logger(StringWriter(), StringWriter(), verbosity(0)),
+            logger = Logger(StringWriter(), StringWriter(), verbosity(0), ColorMode.always),
             outputMode = status,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, fixtureClassesOutput),
@@ -346,7 +344,7 @@ class DifferTest {
     ): String {
         val output = StringWriter()
         Differ(
-            logger = Logger(output, StringWriter(), verbosity(0)),
+            logger = Logger(output, StringWriter(), verbosity(0), ColorMode.always),
             outputMode = outputMode,
             classTextifierProducer = ClassTextifierProducer.`asm-textifier`,
             left = PathToDiff.of(PathToDiff.LeftOrRight.LEFT, left),
