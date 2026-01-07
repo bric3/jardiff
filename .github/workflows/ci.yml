@@ -12,12 +12,16 @@ name: CI
 
 on:
   push:
-    branches: [main, workflow]
+    branches: [main]
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
-  RELEASE_BRANCH: workflow
+  RELEASE_BRANCH: main
 
 jobs:
   config:
