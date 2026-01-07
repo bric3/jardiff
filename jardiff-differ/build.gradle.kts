@@ -10,6 +10,7 @@
 
 plugins {
     id("jardiff.kotlin-library-conventions")
+    id("jardiff.maven-publication-conventions")
     `java-test-fixtures`
 }
 

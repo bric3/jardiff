@@ -15,14 +15,28 @@ pluginManagement {
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     id("com.gradle.develocity") version "4.3"
+    id("com.gradleup.nmcp.settings") version "1.4.3"
 }
 
-rootProject.name = "jardiff"
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = "jardiff-root"
 
 include(
     "jardiff",
     "jardiff-differ"
 )
+
+nmcpSettings {
+    centralPortal {
+        username.set(providers.gradleProperty("mavenCentralUsername"))
+        password.set(providers.gradleProperty("mavenCentralPassword"))
+    }
+}
 
 develocity {
     val isCI = providers.environmentVariable("CI").isPresent

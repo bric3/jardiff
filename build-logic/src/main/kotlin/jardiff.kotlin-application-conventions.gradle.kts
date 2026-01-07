@@ -52,4 +52,3 @@ tasks {
         enabled = false
     }
 }
-
