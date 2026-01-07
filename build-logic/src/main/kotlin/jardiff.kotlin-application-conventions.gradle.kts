@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.support.serviceOf
+
 /*
  * jardiff
  *
@@ -23,6 +25,36 @@ tasks {
         archiveBaseName = project.name
         // removes the `-all` classifier from the artifact name
         archiveClassifier = ""
+
+        val tmpDirProvider = project.layout.buildDirectory.dir("tmp/$name/executable-jar")
+        val fs = project.serviceOf<FileSystemOperations>()
+        doLast {
+            val jarFile = archiveFile.get().asFile
+            val tmpDir = tmpDirProvider.get().asFile
+            val tmpJarFile = File(tmpDir, "${jarFile.name}.tmp")
+
+            fs.copy {
+                from(jarFile)
+                into(tmpJarFile.parentFile)
+                rename { tmpJarFile.name }
+            }
+            fs.delete {
+                delete(jarFile)
+            }
+
+            jarFile.outputStream().use { output ->
+                output.write("#!/bin/sh\n\nexec java \$JAVA_OPTS -jar \$0 \"\$@\"\n\n".toByteArray())
+                tmpJarFile.inputStream().use { input ->
+                    input.copyTo(output)
+                }
+            }
+
+            jarFile.setExecutable(true, false)
+
+            fs.delete {
+                delete(tmpJarFile)
+            }
+        }
     }
 
     startScripts {
