@@ -1,0 +1,155 @@
+#
+# jardiff
+#
+# Copyright (c) 2025 - Brice Dutheil
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+
+# Reusable workflow for building GraalVM native images across multiple OSes
+name: GraalVM Native Build
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: 'Java version for GraalVM'
+        required: false
+        type: string
+        default: '25'
+      artifact-prefix:
+        description: 'Prefix for artifact names'
+        required: true
+        type: string
+      gradle-task:
+        description: 'Gradle task to build native image'
+        required: false
+        type: string
+        default: 'nativeCompile'
+      os-matrix:
+        description: 'JSON array of OS runners (e.g., ["ubuntu-latest", "macos-latest", "windows-latest"])'
+        required: false
+        type: string
+        default: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      rename-binaries:
+        description: 'Rename binaries to <artifact-prefix>-<platform>-<arch> format (true) or keep original names (false)'
+        required: false
+        type: boolean
+        default: true
+      native-build-path:
+        description: 'Path where native binaries are built (relative to repository root)'
+        required: false
+        type: string
+        default: 'build/native'
+
+jobs:
+  native-build:
+    strategy:
+      matrix:
+        os: ${{ fromJSON(inputs.os-matrix) }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Determine platform info
+        id: platform
+        shell: bash
+        run: |
+          OS="${{ matrix.os }}"
+
+          # Determine platform name and architecture
+          if [[ "$OS" == ubuntu-* ]] || [[ "$OS" == *linux* ]]; then
+            PLATFORM="linux"
+            ARCH="amd64"
+            IS_WINDOWS="false"
+          elif [[ "$OS" == macos-* ]] || [[ "$OS" == *macos* ]]; then
+            PLATFORM="macos"
+            ARCH="amd64"
+            IS_WINDOWS="false"
+          elif [[ "$OS" == windows-* ]]; then
+            PLATFORM="windows"
+            ARCH="amd64"
+            IS_WINDOWS="true"
+          else
+            echo "Unknown OS: $OS"
+            exit 1
+          fi
+
+          echo "platform=${PLATFORM}" >> $GITHUB_OUTPUT
+          echo "arch=${ARCH}" >> $GITHUB_OUTPUT
+          echo "is_windows=${IS_WINDOWS}" >> $GITHUB_OUTPUT
+
+          echo "Platform: ${PLATFORM}"
+          echo "Architecture: ${ARCH}"
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Build native image
+        run: ./gradlew ${{ inputs.gradle-task }}
+
+      - name: Find and prepare native binary (Unix)
+        id: prepare_unix
+        if: steps.platform.outputs.is_windows == 'false'
+        shell: bash
+        run: |
+          NATIVE_FILE=$(find ${{ inputs.native-build-path }} -type f -perm +111 2>/dev/null | head -n 1)
+          if [ -z "$NATIVE_FILE" ]; then
+            echo "No native binary found in ${{ inputs.native-build-path }}"
+            exit 1
+          fi
+
+          echo "Native binary found: $NATIVE_FILE"
+
+          if [ "${{ inputs.rename-binaries }}" == "true" ]; then
+            ARTIFACT_NAME="${{ inputs.artifact-prefix }}-${{ steps.platform.outputs.platform }}-${{ steps.platform.outputs.arch }}"
+            cp "$NATIVE_FILE" "$ARTIFACT_NAME"
+            echo "artifact_path=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+            echo "Renamed to: $ARTIFACT_NAME"
+          else
+            echo "artifact_path=$NATIVE_FILE" >> $GITHUB_OUTPUT
+            echo "Keeping original name: $(basename $NATIVE_FILE)"
+          fi
+
+      - name: Find and prepare native binary (Windows)
+        id: prepare_windows
+        if: steps.platform.outputs.is_windows == 'true'
+        shell: bash
+        run: |
+          NATIVE_FILE=$(find ${{ inputs.native-build-path }} -type f -name "*.exe" 2>/dev/null | head -n 1)
+          if [ -z "$NATIVE_FILE" ]; then
+            echo "No native binary found in ${{ inputs.native-build-path }}"
+            exit 1
+          fi
+
+          echo "Native binary found: $NATIVE_FILE"
+
+          if [ "${{ inputs.rename-binaries }}" == "true" ]; then
+            ARTIFACT_NAME="${{ inputs.artifact-prefix }}-${{ steps.platform.outputs.platform }}-${{ steps.platform.outputs.arch }}.exe"
+            cp "$NATIVE_FILE" "$ARTIFACT_NAME"
+            echo "artifact_path=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+            echo "Renamed to: $ARTIFACT_NAME"
+          else
+            echo "artifact_path=$NATIVE_FILE" >> $GITHUB_OUTPUT
+            echo "Keeping original name: $(basename $NATIVE_FILE)"
+          fi
+
+      - name: Upload native binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-${{ steps.platform.outputs.platform }}
+          path: ${{ steps.prepare_unix.outputs.artifact_path || steps.prepare_windows.outputs.artifact_path }}
+          retention-days: 7

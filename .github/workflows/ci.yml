@@ -80,71 +80,12 @@ jobs:
 
   native-build:
     needs: build
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact_name: jardiff-linux-amd64
-          - os: macos-latest
-            platform: macos
-            artifact_name: jardiff-macos-amd64
-          - os: windows-latest
-            platform: windows
-            artifact_name: jardiff-windows-amd64.exe
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '25'
-          distribution: 'graalvm-community'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          validate-wrappers: true
-
-      - name: Build native image
-        run: ./gradlew nativeCompile
-
-      - name: Find and rename native binary (Unix)
-        if: matrix.os != 'windows-latest'
-        run: |
-          NATIVE_FILE=$(find jardiff/build/native -type f -perm +111 2>/dev/null | head -n 1)
-          if [ -n "$NATIVE_FILE" ]; then
-            cp "$NATIVE_FILE" "${{ matrix.artifact_name }}"
-            echo "Native binary found and renamed to ${{ matrix.artifact_name }}"
-          else
-            echo "No native binary found!"
-            exit 1
-          fi
-
-      - name: Find and rename native binary (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: bash
-        run: |
-          NATIVE_FILE=$(find jardiff/build/native -type f -name "*.exe" 2>/dev/null | head -n 1)
-          if [ -n "$NATIVE_FILE" ]; then
-            cp "$NATIVE_FILE" "${{ matrix.artifact_name }}"
-            echo "Native binary found and renamed to ${{ matrix.artifact_name }}"
-          else
-            echo "No native binary found!"
-            exit 1
-          fi
-
-      - name: Upload native binary
-        uses: actions/upload-artifact@v6
-        with:
-          name: native-${{ matrix.platform }}
-          path: ${{ matrix.artifact_name }}
-          retention-days: 7
+    uses: ./.github/workflows/graalvm-native-build.yml
+    with:
+      java-version: '25'
+      artifact-prefix: 'jardiff'
+      gradle-task: 'nativeCompile'
+      native-build-path: 'jardiff/build/native/nativeCompile'
 
   release:
     needs: [config, native-build]
