@@ -10,7 +10,18 @@ env:
   RELEASE_BRANCH: workflow
 
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      release-branch: ${{ steps.set-config.outputs.release-branch }}
+    steps:
+      - name: Set configuration
+        id: set-config
+        run: |
+          echo "release-branch=${{ env.RELEASE_BRANCH }}" >> $GITHUB_OUTPUT
+
   build:
+    needs: config
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -136,8 +147,8 @@ jobs:
           retention-days: 7
 
   release:
-    needs: native-build
-    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', env.RELEASE_BRANCH)
+    needs: [config, native-build]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', needs.config.outputs.release-branch)
     runs-on: ubuntu-latest
     permissions:
       contents: write
