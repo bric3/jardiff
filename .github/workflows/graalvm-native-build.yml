@@ -109,9 +109,12 @@ jobs:
         if: steps.platform.outputs.is_windows == 'false'
         shell: bash
         run: |
-          NATIVE_FILE=$(find ${{ inputs.native-build-path }} -type f -perm +111 2>/dev/null | head -n 1)
+          # Use -executable flag which works on both Linux and macOS
+          NATIVE_FILE=$(find ${{ inputs.native-build-path }} -type f -executable 2>/dev/null | head -n 1)
           if [ -z "$NATIVE_FILE" ]; then
             echo "No native binary found in ${{ inputs.native-build-path }}"
+            echo "Directory contents:"
+            ls -la ${{ inputs.native-build-path }} || echo "Directory does not exist"
             exit 1
           fi
 
