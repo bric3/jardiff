@@ -163,7 +163,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.release_info.outputs.tag }}"
-          JAR_FILE=$(find artifacts/jar -name "*.jar" -type f | head -n 1)
+          # Find the main JAR (without classifier like -sources, -javadoc)
+          JAR_FILE=$(find artifacts/jar -name "*.jar" -type f ! -name "*-sources.jar" ! -name "*-javadoc.jar" ! -name "*-tests.jar" | head -n 1)
           JAR_NAME=$(basename "$JAR_FILE")
 
           # Prepare release notes
@@ -199,8 +200,10 @@ jobs:
           \`\`\`
           EOF
 
-          # Check if draft release exists
-          if gh release view $TAG --json isDraft --jq '.isDraft' 2>/dev/null | grep -q true; then
+          # Check if release exists and get draft status
+          IS_DRAFT=$(gh release view $TAG --json isDraft --jq '.isDraft' 2>/dev/null || echo "none")
+
+          if [ "$IS_DRAFT" = "true" ]; then
             echo "Draft release exists, updating it..."
 
             # Delete existing assets
@@ -209,23 +212,24 @@ jobs:
               gh release delete-asset $TAG "$asset" -y || true
             done
 
-            # Upload all assets
+            # Upload new assets
             gh release upload $TAG \
               "$JAR_FILE" \
               artifacts/native/* \
               --clobber
 
-            # Update release notes
+            # Update release notes and title
             gh release edit $TAG \
               --title "Latest Build - ${{ steps.release_info.outputs.timestamp }}" \
               --notes-file release_notes.md
 
             echo "Draft release updated"
+          elif [ "$IS_DRAFT" = "false" ]; then
+            echo "Published release exists for tag $TAG"
+            echo "Skipping release update - published releases are managed by the release workflow"
+            exit 0
           else
-            echo "No draft release found, creating new one..."
-
-            # Delete tag if it exists but isn't a draft release
-            git push --delete origin $TAG 2>/dev/null || true
+            echo "No release exists, creating new draft..."
 
             # Create new draft release
             gh release create $TAG \
