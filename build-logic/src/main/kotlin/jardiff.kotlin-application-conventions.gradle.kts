@@ -28,9 +28,14 @@ tasks {
     }
 
     val executableShadowJar by registering(ExecutableJarTask::class) {
-        dependsOn(shadowJar)
         inputJar = shadowJar.flatMap { it.archiveFile }
         archiveBaseName = project.name
+    }
+
+    register<Copy>("install") {
+        from(executableShadowJar)
+        into(File(System.getProperty("user.home"), "bin"))
+        rename { "jardiff" }
     }
 
     // Make build depend on both regular and executable JARs
