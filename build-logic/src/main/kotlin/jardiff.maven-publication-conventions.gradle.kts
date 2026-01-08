@@ -22,15 +22,17 @@ publishing {
             artifact(tasks.named("javadocJar"))
 
             // Ensure version ends with -SNAPSHOT for Maven Central snapshots compatibility
-            // Convert versions like "0.1.0+abc" or "0.1.0.0+abc+DIRTY" to "0.1.0-SNAPSHOT"
-            version = project.version.toString().let { v ->
-                if (!v.endsWith("-SNAPSHOT")) {
-                    // Remove build metadata (everything after +) and append -SNAPSHOT
-                    v.substringBefore('+').replace(Regex("\\.\\d+$"), "") + "-SNAPSHOT"
-                } else {
-                    v
+            // Convert versions like "0.1.0.2+abc" or "0.1.0.0+abc+DIRTY" to "0.1.0-SNAPSHOT"
+            // Keep clean tagged releases like "0.1.0" as-is
+            version = project.version.toString()
+                .let { v ->
+                    if (!v.endsWith("-SNAPSHOT") && (v.contains('+') || v.matches(Regex(".*\\.\\d+\\.\\d+\\.\\d+\\.\\d+.*")))) {
+                        // Remove build metadata (everything after +) and the extra commit count
+                        v.substringBefore('+').replace(Regex("\\.\\d+$"), "") + "-SNAPSHOT"
+                    } else {
+                        v
+                    }
                 }
-            }
 
             pom {
                 name = "jardiff"
