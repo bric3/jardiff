@@ -128,10 +128,14 @@ jobs:
       - name: Get version and prepare release info
         id: release_info
         run: |
-          VERSION=$(./gradlew properties | grep "^version:" | awk '{print $2}')
+          # Generate snapshot version using semver plugin
+          ./gradlew :jardiff:printSemver -Psemver.stage=snapshot -Psemver.checkClean=false --quiet
+
+          # Read version from generated file (first line is version without prefix)
+          VERSION=$(head -n 1 jardiff/build/semver/version.txt)
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           SHORT_SHA=$(git rev-parse --short HEAD)
-          TAG="latest-build"
+          TAG="v${VERSION}"
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
