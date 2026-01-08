@@ -19,7 +19,6 @@ repositories {
 dependencies {
     implementation(libs.gradlePlugin.kotlin)
     implementation(libs.gradlePlugin.shadow)
-    implementation(libs.gradlePlugin.semver)
     implementation(libs.gradlePlugin.dokka)
     implementation(libs.gradlePlugin.graalvm)
 

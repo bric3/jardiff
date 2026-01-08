@@ -8,17 +8,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.file.DirectoryProperty
+package io.github.bric3.gradle.executableArchive
+
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.newInstance
 import java.io.File
 import javax.inject.Inject
 
+/**
+ * An action that makes a JAR file executable by prepending a shell script to it.
+ *
+ * Note, Maven Central does not allow executable jars.
+ */
 abstract class MakeJarExecutableAction @Inject constructor(
     project: Project,
     private val fileSystemOperations: FileSystemOperations
@@ -46,22 +53,36 @@ abstract class MakeJarExecutableAction @Inject constructor(
             delete(jarFile)
         }
 
-        jarFile.outputStream().use { output ->
-            output.write("#!/bin/sh\n\nexec java \$JAVA_OPTS -jar \$0 \"\$@\"\n\n".toByteArray())
-            tmpJarFile.inputStream().use { input ->
-                input.copyTo(output)
-            }
-        }
+        makeZipExecutable(tmpJarFile, jarFile)
 
-        jarFile.setExecutable(true, false)
-
-        // Clean up temporary file
         fileSystemOperations.delete {
             delete(tmpJarFile)
         }
     }
 
     companion object {
+        private const val SHELL_HEADER = "#!/bin/sh\n\nexec java \$JAVA_OPTS -jar \$0 \"\$@\"\n\n"
+
+        /**
+         * Creates an executable JAR by prepending a shell script header.
+         *
+         * @param inputFile The source JAR file
+         * @param outputFile The destination file for the executable JAR
+         */
+        fun makeZipExecutable(inputFile: File, outputFile: File) {
+            require(inputFile.exists()) { "Input JAR does not exist: ${inputFile.absolutePath}" }
+            require(inputFile.isFile) { "Input JAR is not a file: ${inputFile.absolutePath}" }
+
+            outputFile.parentFile.mkdirs()
+            outputFile.outputStream().use { output ->
+                output.write(SHELL_HEADER.toByteArray())
+                inputFile.inputStream().use { input ->
+                    input.copyTo(output)
+                }
+            }
+            outputFile.setExecutable(true, false)
+        }
+
         fun Zip.makeExecutable(): Task = this.doLast(project.objects.newInstance<MakeJarExecutableAction>())
     }
 }

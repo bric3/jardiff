@@ -1,4 +1,4 @@
-import MakeJarExecutableAction.Companion.makeExecutable
+import io.github.bric3.gradle.executableArchive.ExecutableJarTask
 
 /*
  * jardiff
@@ -25,8 +25,21 @@ tasks {
         archiveBaseName = project.name
         // removes the `-all` classifier from the artifact name
         archiveClassifier = ""
+        // Note: This JAR should not be executable (Maven Central requirement)
+    }
 
-        makeExecutable()
+    // Create executable JAR with -app suffix for distribution
+    val executableShadowJar by registering(ExecutableJarTask::class) {
+        dependsOn(shadowJar)
+        inputJar = shadowJar.flatMap { it.archiveFile }
+        archiveBaseName = project.name
+        // archiveVersion, archiveClassifier, and archiveExtension use conventions
+        // Output: {project.name}-{version}-app.jar
+    }
+
+    // Make build depend on both regular and executable JARs
+    named(JavaBasePlugin.BUILD_TASK_NAME) {
+        dependsOn(executableShadowJar)
     }
 
     startScripts {

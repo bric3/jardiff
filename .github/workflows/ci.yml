@@ -167,8 +167,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.release_info.outputs.tag }}"
-          # Find the main JAR (without classifier like -sources, -javadoc)
-          JAR_FILE=$(find artifacts/jar -name "*.jar" -type f ! -name "*-sources.jar" ! -name "*-javadoc.jar" ! -name "*-tests.jar" | head -n 1)
+          # Find the executable JAR with -app suffix
+          JAR_FILE=$(find artifacts/jar -name "*-app.jar" -type f | head -n 1)
           JAR_NAME=$(basename "$JAR_FILE")
 
           # Prepare release notes
