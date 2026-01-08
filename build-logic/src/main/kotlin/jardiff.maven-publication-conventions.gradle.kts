@@ -65,13 +65,24 @@ publishing {
 }
 
 signing {
-    // Only sign if we have signing credentials
     val signingKey: String? by project
     val signingPassword: String? by project
 
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["maven"])
+    // Only sign if we have signing credentials
+    val hasFileSigning = project.hasProperty("signing.keyId") &&
+                        project.hasProperty("signing.password") &&
+                        project.hasProperty("signing.secretKeyRingFile")
+
+    when {
+        // Configure in-memory signing if credentials are provided
+        signingKey != null && signingPassword != null -> {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign(publishing.publications["maven"])
+        }
+        // File-based signing: plugin will automatically use signing.* properties
+        hasFileSigning -> {
+            sign(publishing.publications["maven"])
+        }
     }
 }
 
