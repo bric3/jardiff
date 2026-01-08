@@ -13,6 +13,17 @@ plugins {
     id("com.javiersc.semver")
 }
 
+semver {
+    // Workaround to avoid having commit count and metadata in the version on the tagged commit
+    mapVersion { gradleVersion ->
+        if (gradleVersion.commits == 0 && gradleVersion.metadata.isNullOrBlank()) {
+            "${gradleVersion.major}.${gradleVersion.minor}.${gradleVersion.patch}"
+        } else {
+            gradleVersion.toString()
+        }
+    }
+}
+
 repositories {
     mavenCentral()
 }
