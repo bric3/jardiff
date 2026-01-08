@@ -18,8 +18,9 @@ publishing {
         create<MavenPublication>("maven") {
             from(components["java"])
 
-            // Add javadoc JAR to publication
-            artifact(tasks.named("javadocJar"))
+            // Add javadoc JAR to publication, since this task is custom (JavaPlugin obviously don't configure
+            // it automatically for kotlin source set)
+            artifact(tasks.named(JAVADOC_JAR_TASK_NAME))
 
             // Ensure version ends with -SNAPSHOT for Maven Central snapshots compatibility
             // Convert versions like "0.1.0.2+abc" or "0.1.0.0+abc+DIRTY" to "0.1.0-SNAPSHOT"

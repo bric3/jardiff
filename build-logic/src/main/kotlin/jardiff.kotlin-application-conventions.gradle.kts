@@ -43,7 +43,7 @@ tasks {
     }
 
     // empty javadocJar to satisfy maven central requirements
-    register<Jar>("javadocJar") {
+    register<Jar>(JAVADOC_JAR_TASK_NAME) {
         archiveClassifier.set("javadoc")
     }
 

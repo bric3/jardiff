@@ -16,3 +16,8 @@ import org.gradle.kotlin.dsl.the
 // See https://github.com/gradle/gradle/issues/15383#issuecomment-779893192
 val Project.libs
     get() = the<LibrariesForLibs>()
+
+/**
+ * It's not possible to use the [JavaPlugin.JAVADOC_JAR_TASK_NAME] constant.
+ */
+val JAVADOC_JAR_TASK_NAME = "javadocJar"

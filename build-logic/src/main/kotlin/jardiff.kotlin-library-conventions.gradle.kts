@@ -19,7 +19,7 @@ plugins {
 tasks {
     val dokkaGenerate by existing
 
-    register<Jar>("javadocJar") {
+    register<Jar>(JAVADOC_JAR_TASK_NAME) {
         dependsOn(dokkaGenerate)
         from(layout.buildDirectory.dir("dokka/html"))
         archiveClassifier.set("javadoc")
