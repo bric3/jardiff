@@ -132,7 +132,7 @@ jobs:
         id: release_info
         run: |
           # Generate snapshot version using semver plugin
-          ./gradlew :printSemver -Psemver.stage=snapshot -Psemver.checkClean=false --quiet
+          ./gradlew :printSemver -Psemver.tagPrefix=v -Psemver.stage=snapshot -Psemver.checkClean=false --quiet
 
           # Read version from generated file (first line is version without prefix)
           VERSION=$(head -n 1 build/semver/version.txt)
