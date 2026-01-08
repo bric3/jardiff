@@ -10,6 +10,7 @@
 
 package io.github.bric3.gradle.executableArchive
 
+import io.github.bric3.gradle.executableArchive.MakeJarExecutableAction.Companion.DEFAULT_SHELL_HEADER
 import io.github.bric3.gradle.executableArchive.MakeJarExecutableAction.Companion.makeZipExecutable
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
@@ -29,6 +30,8 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
  *
  * Note: Maven Central does not allow executable JARs, so this task creates a separate
  * executable version with an `-app` suffix for distribution.
+ *
+ * @see MakeJarExecutableAction
  */
 abstract class ExecutableJarTask : DefaultTask() {
 
@@ -49,6 +52,13 @@ abstract class ExecutableJarTask : DefaultTask() {
 
     @get:Internal("Represented as part of archiveFile")
     abstract val archiveExtension: Property<String>
+
+    /**
+     * The shell script header to prepend to the JAR.
+     * A double newline separator is automatically appended as a safeguard.
+     */
+    @get:Input
+    abstract val shellHeader: Property<String>
 
     @get:Input
     val archiveFileName: Provider<String>
@@ -74,14 +84,16 @@ abstract class ExecutableJarTask : DefaultTask() {
         archiveClassifier.convention("app")
         archiveExtension.convention("jar")
         archiveVersion.convention(project.provider { project.version.toString() })
+        shellHeader.convention(DEFAULT_SHELL_HEADER)
     }
 
     @TaskAction
     fun createExecutableJar() {
         val input = inputJar.get().asFile
         val output = executableArchiveFile.get().asFile
+        val header = shellHeader.get()
 
-        makeZipExecutable(input, output)
+        makeZipExecutable(input, output, header)
 
         logger.info("Created executable JAR: ${output.name}")
     }

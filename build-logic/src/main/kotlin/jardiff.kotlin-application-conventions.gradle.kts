@@ -23,18 +23,14 @@ tasks {
 
     shadowJar {
         archiveBaseName = project.name
-        // removes the `-all` classifier from the artifact name
         archiveClassifier = ""
         // Note: This JAR should not be executable (Maven Central requirement)
     }
 
-    // Create executable JAR with -app suffix for distribution
     val executableShadowJar by registering(ExecutableJarTask::class) {
         dependsOn(shadowJar)
         inputJar = shadowJar.flatMap { it.archiveFile }
         archiveBaseName = project.name
-        // archiveVersion, archiveClassifier, and archiveExtension use conventions
-        // Output: {project.name}-{version}-app.jar
     }
 
     // Make build depend on both regular and executable JARs
