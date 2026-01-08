@@ -16,6 +16,18 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     id("com.gradle.develocity") version "4.3"
     id("com.gradleup.nmcp.settings") version "1.4.3"
+    id("com.javiersc.semver") version "0.9.0"
+}
+
+semver {
+    // Workaround to avoid having commit count and metadata in the version on the tagged commit
+    mapVersion { gradleVersion ->
+        if (gradleVersion.commits == 0 && gradleVersion.metadata.isNullOrBlank()) {
+            "${gradleVersion.major}.${gradleVersion.minor}.${gradleVersion.patch}"
+        } else {
+            gradleVersion.toString()
+        }
+    }
 }
 
 dependencyResolutionManagement {
