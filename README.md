@@ -1,8 +1,28 @@
 # Jardiff
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.bric3.jardiff/jardiff.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.bric3.jardiff/jardiff)
+[![GitHub release](https://img.shields.io/github/release/bric3/jardiff.svg?label=Github%20Release)](https://github.com/bric3/jardiff/releases/latest)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/bric3/jardiff/ci.yml?branch=main&label=build)](https://github.com/bric3/jardiff/actions?query=branch%3Amain)
+[![License](https://img.shields.io/github/license/bric3/jardiff.svg)](LICENSE)
+
 Jardiff is a command-line tool for comparing the contents of JAR files and directories. It provides detailed, line-based diffs of class files and resources, making it easy to spot changes between builds, releases, or different versions of Java/Kotlin projects.
-         
-Example output in `diff` mode (the default):
+
+> [!NOTE]
+> This project is not affiliated with Lightbend or the original jardiff project.
+> 
+> While [lightbend-labs/jardiff](https://github.com/lightbend-labs/jardiff) and this tool share the same name and similar goals, they have different features:
+> 
+> The **lightbend-labs/jardiff** focuses on Scala projects, and it has a some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
+> 
+> While this **bric3/jardiff** tool offers a more versatile tool to inspect class differences
+> * Additional to the usual diff output, it provides statistics (`--stat`) and status (`--status`)
+>   modes similar to git diff/status
+> * Supports class extension coalescing, in case classes are renamed to other extensions like `.bin`, `.clazz`, etc.
+> * Various text representation modes for class files
+> * Flexible glob pattern filtering for including/excluding files
+> * Offers limited support for non-binary text files
+
+Example output in default mode:
 
 ```diff
 --- foo/bar/qux/Baz.class
@@ -46,13 +66,23 @@ Example output in `diff` mode (the default):
      ANEWARRAY java/lang/String
 ```
 
-Or with the `stat` mode
+Or with the `--stat` mode
 
 ```
 D  foo/bar/qux/Zuul.class
  D foo/bar/qux/Zig.class
 M  foo/bar/qux/Baz.class
    foo/bar/qux/Zorg.class
+```
+
+Or with the `--status` mode
+
+```
+ foo/bar/qux/Zuul.class | 42 ++++++++++++++++++++++++++++++++----------
+ foo/bar/qux/Zig.class  |  1 -
+ foo/bar/qux/Baz.class  | 34 ++++++++++++++++++++++------------
+ foo/bar/qux/Zorg.class |  0 
+ 4 files changed, 54 insertions(+), 23 deletions(-)
 ```
 
 ## Features
@@ -65,27 +95,28 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
    * ASM's Textify (_default_)
    * Class outline (version, is kotlin/groovy class, synthetic or bridge members)
    * Class File Version only
-* Binary diff as sha-1 hashes 
+* Binary diff as sha-1 hashes
 * Include glob patterns (for the relative paths inside the jars/directories)
 * Exclude glob patterns (for the relative paths inside the jars/directories)
 * Supports `--exit-code` for CI/CD pipelines
 
-  _(fallback mechanism, for non class-files, non-decoded text files)_
-
-Unsupported at this time, if ever...
-* Nested jars
+Features planned for future releases... :
 * Ignoring debug information in class files (like line numbers, local variable names, etc.)
-* More advanced binary diffs, i.e. showing bytes differences.
-
-  _This one is unlikely_
+* Append Koltin/Scala/Groovy detection to regular class text output
+* Sort members alphabetically
+* Replace ASM by the Class file API (Need JDK 24+)
+* Better terminal integration, ideas: pager support, colors configuration, auto-detection of `delta`, etc.
 
 ## Usage
-                 
+
 > [!CAUTION] 
 > This tool needs a JDK11 to build and run. Example with `mise`
 > ```shell
 > $ mise exec java@corretto-11 -- java -jar jardiff-0.1.0-SNAPSHOT.jar
 > ```
+
+> [!TIP]
+> The jar on the Github release is an executable jar, so you can run it directly with `./jardiff-0.1.0-SNAPSHOT.jar {left} {right}` after downloading it (`chmod`ing it executable as needed).
 
 Build it `./gradlew build`, then run it:
 
@@ -139,7 +170,7 @@ Compares two JAR files or directories and reports differences.
 > ```
 
 
-Also, you can run it from gradle:
+Also, you can run it from Gradle:
 
 ```shell
 $ ./gradlew run --args="{left} {right}"
@@ -167,5 +198,6 @@ $ ./gradlew build
 
 ## License
 
-Mozilla Public License, v. 2.0. See [LICENSE](LICENSE) for details.
+Copyright 2025 Brice Dutheil
 
+Unless otherwise noted, all components are licenced under the [Mozilla Public License Version 2.0](./LICENSE).
