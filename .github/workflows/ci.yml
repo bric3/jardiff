@@ -45,6 +45,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 100
+          fetch-tags: true
 
       - name: Set up GraalVM
         uses: graalvm/setup-graalvm@v1
