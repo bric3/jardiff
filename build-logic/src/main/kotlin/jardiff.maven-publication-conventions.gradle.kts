@@ -18,6 +18,9 @@ publishing {
         create<MavenPublication>("maven") {
             from(components["java"])
 
+            // Add javadoc JAR to publication
+            artifact(tasks.named("javadocJar"))
+
             // Ensure version ends with -SNAPSHOT for Maven Central snapshots compatibility
             // Convert versions like "0.1.0+abc" or "0.1.0.0+abc+DIRTY" to "0.1.0-SNAPSHOT"
             version = project.version.toString().let { v ->
