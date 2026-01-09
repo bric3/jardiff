@@ -85,6 +85,11 @@ Or with the `--status` mode
  4 files changed, 54 insertions(+), 23 deletions(-)
 ```
 
+When output piped to [delta](https://github.com/dandavison/delta), it looks like this:
+
+<img alt="jardiff with delta" src=".github/images/jardiff-delta-screenshot.png" width="600"/>
+
+
 ## Features
 
 Other tools didn't have the feature I wanted, or they were impractical to use, so I made my own.
@@ -105,7 +110,7 @@ Features planned for future releases... :
 * Append Koltin/Scala/Groovy detection to regular class text output
 * Sort members alphabetically
 * Replace ASM by the Class file API (Need JDK 24+)
-* Better terminal integration, ideas: pager support, colors configuration, auto-detection of `delta`, etc.
+* Better terminal integration, ideas: pager support, colors configuration, auto-detection of `delta`, etc. (Might need FFM, need JDK 22+)
 
 ## Usage
 
