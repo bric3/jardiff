@@ -16,12 +16,26 @@ plugins {
     id("com.gradleup.shadow")
 }
 
+// Separate source set for the Java 8 Main class
+val java8Main by sourceSets.creating {
+    java {
+        srcDir("src/java8Main/java")
+    }
+}
+
 tasks {
+    named<JavaCompile>(java8Main.compileJavaTaskName) {
+        options.release.set(8)
+        classpath = files() // Ensure no dependencies are used
+    }
+
     jar {
         enabled = false
     }
 
     shadowJar {
+        from(java8Main.output)
+
         archiveBaseName = project.name
         archiveClassifier = ""
         // Note: This JAR should not be executable (Maven Central requirement)

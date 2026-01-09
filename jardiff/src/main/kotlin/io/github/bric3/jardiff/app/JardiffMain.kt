@@ -37,10 +37,10 @@ import kotlin.system.exitProcess
 @Command(
     name = "jardiff",
     mixinStandardHelpOptions = true,
-    versionProvider = Main.FromManifestVersionProvider::class,
+    versionProvider = JardiffMain.FromManifestVersionProvider::class,
     description = ["Compares two JAR files or directories and reports differences."]
 )
-class Main : Callable<Int> {
+class JardiffMain : Callable<Int> {
     // Note: Description lines should be at most 50 characters long
     // for proper formatting in the help message by picocli.
     
@@ -231,11 +231,11 @@ class Main : Callable<Int> {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            val main = Main()
+            val jardiffMain = JardiffMain()
             exitProcess(
-                CommandLine(main)
+                CommandLine(jardiffMain)
                     .setCaseInsensitiveEnumValuesAllowed(true)
-                    .setExecutionStrategy(main::executionStrategy)
+                    .setExecutionStrategy(jardiffMain::executionStrategy)
                     .execute(*args)
             )
         }
