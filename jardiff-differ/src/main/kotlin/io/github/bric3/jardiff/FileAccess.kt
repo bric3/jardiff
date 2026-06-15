@@ -13,13 +13,16 @@ package io.github.bric3.jardiff
 import java.io.BufferedInputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
 sealed class FileAccess(
     val parentPath: Path,
     val relativePath: Path,
 ) : Comparable<FileAccess> {
-    abstract val bufferedInputStream: BufferedInputStream
+    abstract val size: Long?
+    abstract fun openBufferedInputStream(): BufferedInputStream
+
     override fun compareTo(other: FileAccess): Int {
         return relativePath.compareTo(other.relativePath)
     }
@@ -31,19 +34,23 @@ sealed class FileAccess(
     class FromJar(
         parentPath: Path,
         relativePath: Path,
-        private val jarFile: JarFile
+        private val jarFile: JarFile,
+        private val jarEntry: JarEntry = jarFile.getJarEntry(relativePath.toString())
+            ?: throw IllegalArgumentException("Jar entry not found: $relativePath")
     ) : FileAccess(parentPath, relativePath) {
-        override val bufferedInputStream: BufferedInputStream by lazy {
-            jarFile.getInputStream(jarFile.getEntry(relativePath.toString())).buffered()
-        }
+        override val size: Long? = jarEntry.size.takeIf { it >= 0 }
+
+        override fun openBufferedInputStream(): BufferedInputStream =
+            jarFile.getInputStream(jarEntry).buffered()
     }
 
     class FromDirectory(
         parentPath: Path,
         relativePath: Path
     ) : FileAccess(parentPath, relativePath) {
-        override val bufferedInputStream: BufferedInputStream by lazy {
+        override val size: Long? by lazy { Files.size(parentPath.resolve(relativePath)) }
+
+        override fun openBufferedInputStream(): BufferedInputStream =
             Files.newInputStream(parentPath.resolve(relativePath)).buffered()
-        }
     }
 }

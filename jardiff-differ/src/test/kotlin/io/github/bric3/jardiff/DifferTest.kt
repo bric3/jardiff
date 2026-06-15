@@ -127,6 +127,26 @@ class DifferTest {
     }
 
     @Test
+    fun `status should keep semantic class comparison when class bytes differ`() {
+        val (leftDirectory, rightDirectory) = createSemanticSameClassDirectories(tempDir, FooFixtureClass::class)
+
+        val output = diff(status, leftDirectory, rightDirectory)
+
+        assertThat(output).describedAs("status should not report byte-only class differences")
+            .isEqualTo("${green("  ")} ${FooFixtureClass::class.path}")
+    }
+
+    @Test
+    fun `diff should keep semantic class comparison when class bytes differ`() {
+        val (leftDirectory, rightDirectory) = createSemanticSameClassDirectories(tempDir, FooFixtureClass::class)
+
+        val output = diff(diff, leftDirectory, rightDirectory)
+
+        assertThat(output).describedAs("diff should not report byte-only class differences")
+            .isEmpty()
+    }
+
+    @Test
     fun `should find no difference on coalesced classes using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,

@@ -114,3 +114,82 @@ fun createJarFromResources(
 
 fun fixtureClassInputStream(kclass: KClass<*>): InputStream =
     kclass.java.classLoader.getResourceAsStream(kclass.path)!!.buffered()
+
+fun createSemanticSameClassDirectories(destinationDir: Path, kclass: KClass<*>): Pair<Path, Path> {
+    val leftDirectory = destinationDir.resolve("${UUID.randomUUID()}-left-semantic-class")
+    val rightDirectory = destinationDir.resolve("${UUID.randomUUID()}-right-semantic-class")
+    val classPath = Path.of(kclass.path)
+    val originalClassBytes = kclass.bytes
+        ?: throw IllegalStateException("Could not load fixture class bytes for $kclass")
+
+    Files.createDirectories(leftDirectory.resolve(classPath).parent)
+    Files.createDirectories(rightDirectory.resolve(classPath).parent)
+    Files.write(leftDirectory.resolve(classPath), originalClassBytes)
+    Files.write(
+        rightDirectory.resolve(classPath),
+        appendUnusedEntriesToClassConstantPool(originalClassBytes, "jardiff-unused-test-constant")
+    )
+
+    return leftDirectory to rightDirectory
+}
+
+/**
+ * Returns valid class bytes that differ from [classBytes] but textify to the same
+ * ASM output by appending an unreferenced UTF-8 constant-pool entry.
+ *
+ * This lets tests exercise the "bytes differ, semantic class diff does not" path.
+ */
+private fun appendUnusedEntriesToClassConstantPool(classBytes: ByteArray, value: String): ByteArray {
+    require(classBytes[0] == 0xCA.toByte() && classBytes[1] == 0xFE.toByte()) {
+        "Expected a class file"
+    }
+
+    val constantPoolCount = readUnsignedShort(classBytes, 8)
+    var offset = 10
+    var index = 1
+    while (index < constantPoolCount) {
+        when (val tag = classBytes[offset++].toInt() and 0xff) {
+            1 -> offset += 2 + readUnsignedShort(classBytes, offset)
+            3, 4, 9, 10, 11, 12, 17, 18 -> offset += 4
+            5, 6 -> {
+                offset += 8
+                index++
+            }
+            7, 8, 16, 19, 20 -> offset += 2
+            15 -> offset += 3
+            else -> error("Unsupported constant pool tag $tag")
+        }
+        index++
+    }
+
+    val extraConstant = value.toByteArray(Charsets.UTF_8)
+    require(extraConstant.size <= 65535) {
+        "UTF-8 constant is too large"
+    }
+
+    val updatedClassBytes = ByteArray(classBytes.size + 3 + extraConstant.size)
+    classBytes.copyInto(updatedClassBytes, endIndex = offset)
+    writeUnsignedShort(updatedClassBytes, 8, constantPoolCount + 1)
+
+    var writeOffset = offset
+    updatedClassBytes[writeOffset++] = 1
+    writeUnsignedShort(updatedClassBytes, writeOffset, extraConstant.size)
+    writeOffset += 2
+    extraConstant.copyInto(updatedClassBytes, writeOffset)
+    writeOffset += extraConstant.size
+    classBytes.copyInto(
+        destination = updatedClassBytes,
+        destinationOffset = writeOffset,
+        startIndex = offset
+    )
+
+    return updatedClassBytes
+}
+
+private fun readUnsignedShort(bytes: ByteArray, offset: Int): Int =
+    ((bytes[offset].toInt() and 0xff) shl 8) or (bytes[offset + 1].toInt() and 0xff)
+
+private fun writeUnsignedShort(bytes: ByteArray, offset: Int, value: Int) {
+    bytes[offset] = (value ushr 8).toByte()
+    bytes[offset + 1] = value.toByte()
+}

@@ -40,7 +40,7 @@ object FileReader {
         // * is class file?
         // * is text file?
         // * is other binary file? then limit to checksum
-        fileAccess.bufferedInputStream.use {
+        fileAccess.openBufferedInputStream().use {
             return runCatching {
                 when (fileAccess.relativePath.extension) {
                     in classExtensions -> Result.success(classTextifierProducer.instance.toLines(it))
@@ -70,7 +70,7 @@ object FileReader {
                 }
             }.recoverCatching { t ->
                 Logger.debugLog("Error reading file $fileAccess.${t.message}")
-                produceHash(it)
+                fileAccess.openBufferedInputStream().use(::produceHash)
             }.getOrDefault(emptyList())
         }
     }
@@ -89,15 +89,13 @@ object FileReader {
     private fun produceHash(it: BufferedInputStream) = listOf("FILE SHA-1: ${sha1Hex(it)}")
 
     private fun sha1Hex(input: InputStream): String {
-        return input.use {
-            val buffer = ByteArray(8192)
-            val digest = MessageDigest.getInstance("SHA-1")
-            var read: Int
-            while (it.read(buffer).also { read = it } != -1) {
-                digest.update(buffer, 0, read)
-            }
-            digest.digest().joinToString("") { "%02x".format(it) }
+        val buffer = ByteArray(8192)
+        val digest = MessageDigest.getInstance("SHA-1")
+        var read: Int
+        while (input.read(buffer).also { read = it } != -1) {
+            digest.update(buffer, 0, read)
         }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
     /**

@@ -20,10 +20,15 @@ package io.github.bric3.jardiff.output
  * @param leftExists Whether the file exists in the left side
  * @param rightExists Whether the file exists in the right side
  * @param unifiedDiff The unified diff lines (empty if no changes)
+ * @param changed Whether the file has semantic differences
  */
 data class FileComparisonData(
     val path: String,
     val leftExists: Boolean,
     val rightExists: Boolean,
-    val unifiedDiff: List<String>
-)
+    val unifiedDiff: List<String>,
+    val changed: Boolean = unifiedDiff.isNotEmpty()
+) {
+    val hasDifferences: Boolean
+        get() = leftExists != rightExists || changed
+}

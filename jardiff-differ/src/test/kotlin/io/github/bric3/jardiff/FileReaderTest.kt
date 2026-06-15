@@ -31,6 +31,18 @@ class FileReaderTest {
     }
 
     @Test
+    fun `should reopen jar entry stream`() {
+        JarFile(fixtureJar.toFile()).use { jarFile ->
+            val fileAccess = FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), jarFile)
+
+            val firstRead = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+            val secondRead = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+
+            assertThat(secondRead).isEqualTo(firstRead)
+        }
+    }
+
+    @Test
     fun `should textify class from directory`() {
         val fileAccess = FileAccess.FromDirectory(fixtureClassesOutput, Path.of(FooFixtureClass::class.path))
         val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)

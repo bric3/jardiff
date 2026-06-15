@@ -64,33 +64,11 @@ class Differ @JvmOverloads constructor(
 
         // leftEntries and rightEntries may not be symmetric
         makeListOfFilesToDiff(leftEntries, rightEntries).forEach {
-            val leftLines = readFileAsTextIfPossible(it.left, classTextifierProducer, coalesceClassFileWithExtensions)
-            val rightLines = readFileAsTextIfPossible(it.right, classTextifierProducer, coalesceClassFileWithExtensions)
+            val comparisonData = comparisonData(it)
 
-            val patch = DiffUtils.diff(
-                leftLines,
-                rightLines
-            )
-
-            val unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
-                it.left?.relativePath?.toString(),
-                it.right?.relativePath?.toString(),
-                leftLines,
-                patch,
-                4
-            )
-
-            if (unifiedDiff.isNotEmpty()) {
+            if (comparisonData.hasDifferences) {
                 hasDifferences = true
             }
-
-            // Create comparison data and pass to formatter
-            val comparisonData = FileComparisonData(
-                path = it.path,
-                leftExists = it.left != null,
-                rightExists = it.right != null,
-                unifiedDiff = unifiedDiff
-            )
 
             formatter.onFileProcessed(logger, comparisonData)
         }
@@ -98,6 +76,111 @@ class Differ @JvmOverloads constructor(
         formatter.onComplete(logger)
 
         return hasDifferences
+    }
+
+    private fun comparisonData(entry: FileEntryToDiff): FileComparisonData {
+        val left = entry.left
+        val right = entry.right
+
+        if (left != null && right != null && haveSameBytes(left, right)) {
+            return unchangedComparisonData(entry)
+        }
+
+        // In status mode, when a file exists only on one side (added/removed),
+        // we can skip text comparison and report it immediately.
+        val canSkipTextComparison = outputMode == OutputMode.status && (left == null || right == null)
+
+        if (!canSkipTextComparison) {
+            val leftLines = readFileAsTextIfPossible(left, classTextifierProducer, coalesceClassFileWithExtensions)
+            val rightLines = readFileAsTextIfPossible(right, classTextifierProducer, coalesceClassFileWithExtensions)
+
+            if (left != null && right != null && leftLines == rightLines) {
+                return unchangedComparisonData(entry)
+            }
+
+            if (outputMode != OutputMode.status) {
+                return diffComparisonData(entry, leftLines, rightLines)
+            }
+        }
+
+        return statusComparisonData(entry, changed = !canSkipTextComparison)
+    }
+
+    private fun diffComparisonData(
+        entry: FileEntryToDiff,
+        leftLines: List<String>,
+        rightLines: List<String>
+    ): FileComparisonData {
+        val patch = DiffUtils.diff(
+            leftLines,
+            rightLines
+        )
+
+        val unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
+            entry.left?.relativePath?.toString(),
+            entry.right?.relativePath?.toString(),
+            leftLines,
+            patch,
+            4
+        )
+
+        return FileComparisonData(
+            path = entry.path,
+            leftExists = entry.left != null,
+            rightExists = entry.right != null,
+            unifiedDiff = unifiedDiff
+        )
+    }
+
+    private fun unchangedComparisonData(entry: FileEntryToDiff): FileComparisonData {
+        return FileComparisonData(
+            path = entry.path,
+            leftExists = entry.left != null,
+            rightExists = entry.right != null,
+            unifiedDiff = emptyList()
+        )
+    }
+
+    private fun statusComparisonData(entry: FileEntryToDiff, changed: Boolean): FileComparisonData {
+        return FileComparisonData(
+            path = entry.path,
+            leftExists = entry.left != null,
+            rightExists = entry.right != null,
+            unifiedDiff = emptyList(),
+            changed = changed
+        )
+    }
+
+    private fun haveSameBytes(left: FileAccess, right: FileAccess): Boolean {
+        val leftSize = left.size
+        val rightSize = right.size
+        if (leftSize != null && rightSize != null && leftSize != rightSize) {
+            return false
+        }
+
+        left.openBufferedInputStream().use { leftInput ->
+            right.openBufferedInputStream().use { rightInput ->
+                val leftBuffer = ByteArray(8192)
+                val rightBuffer = ByteArray(8192)
+
+                while (true) {
+                    val leftRead = leftInput.read(leftBuffer)
+                    val rightRead = rightInput.read(rightBuffer)
+
+                    if (leftRead != rightRead) {
+                        return false
+                    }
+                    if (leftRead == -1) {
+                        return true
+                    }
+                    for (i in 0 until leftRead) {
+                        if (leftBuffer[i] != rightBuffer[i]) {
+                            return false
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun makeListOfFilesToDiff(
@@ -188,7 +271,7 @@ class Differ @JvmOverloads constructor(
                 }
                 jf.entries().asSequence()
                     .filter { it.isDirectory.not() }
-                    .map { FileAccess.FromJar(pathToDiff.path, Path.of(it.name), jf) }
+                    .map { FileAccess.FromJar(pathToDiff.path, Path.of(it.name), jf, it) }
                     .filter(pathFilter)
                     .associateBy { it.relativePath }
             }

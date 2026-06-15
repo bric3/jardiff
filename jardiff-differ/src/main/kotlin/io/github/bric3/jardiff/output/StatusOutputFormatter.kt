@@ -26,7 +26,7 @@ class StatusOutputFormatter : OutputFormatter() {
         val status = when {
             !data.leftExists && data.rightExists -> "${logger.red("D ")} ${data.path}"
             data.leftExists && !data.rightExists -> "${logger.red(" D")} ${data.path}"
-            data.unifiedDiff.isNotEmpty() -> "${logger.red("M ")} ${data.path}"
+            data.changed -> "${logger.red("M ")} ${data.path}"
             else -> "${logger.green("  ")} ${data.path}"
         }
         logger.stdout(status)
