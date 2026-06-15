@@ -21,11 +21,13 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class FileReaderTest {
+    private val classTextifier = `asm-textifier`.create()
+
     @Test
     fun `should textify class from jar`() {
         val fileAccess =
             FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), JarFile(fixtureJar.toFile()))
-        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
@@ -35,8 +37,8 @@ class FileReaderTest {
         JarFile(fixtureJar.toFile()).use { jarFile ->
             val fileAccess = FileAccess.FromJar(fixtureJar, Path.of(FooFixtureClass::class.path), jarFile)
 
-            val firstRead = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
-            val secondRead = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+            val firstRead = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
+            val secondRead = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
             assertThat(secondRead).isEqualTo(firstRead)
         }
@@ -45,7 +47,7 @@ class FileReaderTest {
     @Test
     fun `should textify class from directory`() {
         val fileAccess = FileAccess.FromDirectory(fixtureClassesOutput, Path.of(FooFixtureClass::class.path))
-        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
     }
@@ -61,7 +63,7 @@ class FileReaderTest {
         )
 
         val fileAccess = FileAccess.FromDirectory(tempDir, binaryFile)
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).element(0).asString().matches("FILE SHA-1: [0-9a-fA-F]{40}")
     }
@@ -69,7 +71,7 @@ class FileReaderTest {
     @Test
     fun `should properly read ISO-8859-1 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("iso8859-1.properties"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).containsExactly(
             "#",
@@ -94,7 +96,7 @@ class FileReaderTest {
     @Test
     fun `should properly read UTF-8 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-8.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",
@@ -124,7 +126,7 @@ class FileReaderTest {
     @Test
     fun `should properly read UTF-16 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("utf-16be.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).containsExactly(
             "﻿> [!IMPORTANT]",
@@ -142,7 +144,7 @@ class FileReaderTest {
     @Test
     fun `should properly read US_ASCII text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("us-ascii.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",
@@ -157,7 +159,7 @@ class FileReaderTest {
     @Test
     fun `should properly read Windoes CP-1252 text files`() {
         val fileAccess = FileAccess.FromDirectory(fixtureResources, Path.of("cp1252.md"))
-        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, `asm-textifier`)
+        val textContent = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
 
         assertThat(textContent).containsExactly(
             "> [!IMPORTANT]",

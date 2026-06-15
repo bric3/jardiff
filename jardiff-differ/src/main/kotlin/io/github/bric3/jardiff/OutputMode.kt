@@ -21,7 +21,7 @@ import io.github.bric3.jardiff.output.StatusOutputFormatter
  * Each mode produces a different [OutputFormatter] implementation.
  */
 @Suppress("EnumEntryName") // used for cli
-enum class OutputMode(producer: () -> OutputFormatter) {
+enum class OutputMode(private val producer: () -> OutputFormatter) {
     /**
      * Short status output mode.
      *
@@ -44,6 +44,6 @@ enum class OutputMode(producer: () -> OutputFormatter) {
     diff({ DiffOutputFormatter() })
     ;
 
-    /** The formatter instance produced by this mode */
-    val formatter by lazy { producer() }
+    /** Create the formatter instance for one diff run. */
+    fun formatter() = producer()
 }

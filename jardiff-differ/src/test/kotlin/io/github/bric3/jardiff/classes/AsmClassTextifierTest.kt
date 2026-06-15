@@ -11,8 +11,11 @@
 package io.github.bric3.jardiff.classes
 
 import io.github.bric3.jardiff.FooFixtureClass
+import io.github.bric3.jardiff.MemberOrderFixture
+import io.github.bric3.jardiff.bytes
 import io.github.bric3.jardiff.fixtureClassInputStream
 import io.github.bric3.jardiff.path
+import io.github.bric3.jardiff.reorderClassMembers
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
@@ -21,6 +24,24 @@ import java.io.IOException
 import java.io.InputStream
 
 class AsmClassTextifierTest {
+    @Test
+    fun `textify can ignore class member order`() {
+        val original = MemberOrderFixture::class.bytes
+            ?: throw IllegalStateException("Could not load fixture class bytes")
+        val reordered = reorderClassMembers(original)
+        val sortedOptions = ClassTextOptions(memberOrder = ClassMemberOrder.Sorted)
+
+        assertThat(AsmTextifier().toText(ByteArrayInputStream(original)))
+            .isNotEqualTo(AsmTextifier().toText(ByteArrayInputStream(reordered)))
+
+        val sortedTextifier = AsmTextifier(options = sortedOptions)
+
+        assertThat(sortedTextifier.toText(ByteArrayInputStream(original)))
+            .isEqualToIgnoringNewLines(
+                sortedTextifier.toText(ByteArrayInputStream(reordered))
+            )
+    }
+
     @Test
     fun `textify classes by InputStream`() {
         fixtureClassInputStream(FooFixtureClass::class).use {

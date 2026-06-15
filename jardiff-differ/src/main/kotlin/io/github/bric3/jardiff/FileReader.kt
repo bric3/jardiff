@@ -10,7 +10,7 @@
 
 package io.github.bric3.jardiff
 
-import io.github.bric3.jardiff.classes.ClassTextifierProducer
+import io.github.bric3.jardiff.classes.ClassTextifier
 import org.apache.tika.parser.txt.CharsetDetector
 import java.io.BufferedInputStream
 import java.io.InputStream
@@ -24,7 +24,7 @@ object FileReader {
     @JvmOverloads
     fun readFileAsTextIfPossible(
         fileAccess: FileAccess?,
-        classTextifierProducer: ClassTextifierProducer,
+        classTextifier: ClassTextifier,
         additionalClassExtensions: Set<String> = emptySet()
     ): List<String> {
         if (fileAccess == null) {
@@ -40,7 +40,7 @@ object FileReader {
         fileAccess.openBufferedInputStream().use {
             return runCatching {
                 when (fileAccess.relativePath.extension) {
-                    in classExtensions -> Result.success(classTextifierProducer.instance.toLines(it))
+                    in classExtensions -> Result.success(classTextifier.toLines(it))
                     else -> {
                         // Mark the stream so we can reset if needed
                         it.mark(Int.MAX_VALUE)

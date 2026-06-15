@@ -13,17 +13,24 @@ import java.io.InputStream
  * This includes class structure, fields, and method signatures, but excludes
  * implementation details like method bodies, line numbers, and local variables.
  */
-data object ClassOutline : ClassTextifier() {
+class ClassOutline(
+    private val options: ClassTextOptions = ClassTextOptions()
+) : ClassTextifier() {
     override fun toLines(inputStream: InputStream): List<String> {
-        val visitor = OutlineClassVisitor()
+        val visitor = OutlineClassVisitor(options.memberOrder)
         inputStream.use {
             ClassReader(it).accept(visitor, ClassReader.SKIP_CODE or ClassReader.SKIP_DEBUG or ClassReader.SKIP_FRAMES)
         }
         return visitor.lines
     }
 
-    private class OutlineClassVisitor : ClassVisitor(Opcodes.ASM9) {
+    private class OutlineClassVisitor(
+        private val memberOrder: ClassMemberOrder
+    ) : ClassVisitor(Opcodes.ASM9) {
         val lines = mutableListOf<String>()
+        private val fields = mutableListOf<MemberLine>()
+        private val methods = mutableListOf<MemberLine>()
+        private var nextSequence = 0
         private var simpleClassName: String = ""
         private var isKotlin = false
         private var isGroovy = false
@@ -95,6 +102,8 @@ data object ClassOutline : ClassTextifier() {
                     lines.add(classLineIndex, "// Groovy class")
                 }
             }
+            appendMembers(fields)
+            appendMembers(methods)
             lines.add("}")
         }
 
@@ -109,7 +118,13 @@ data object ClassOutline : ClassTextifier() {
             val type = Type.getType(descriptor).className
             val valueStr = if (value != null) " = $value" else ""
             val syntheticComment = if ((access and Opcodes.ACC_SYNTHETIC) != 0) " // synthetic" else ""
-            lines.add("  $modifiers$type $name$valueStr$syntheticComment")
+            fields.add(
+                MemberLine(
+                    key = listOf(name, descriptor, signature.orEmpty(), access.toString()),
+                    sequence = nextSequence++,
+                    line = "  $modifiers$type $name$valueStr$syntheticComment"
+                )
+            )
             return null
         }
 
@@ -149,8 +164,25 @@ data object ClassOutline : ClassTextifier() {
                 "$modifiers$returnType $name($params)$throwsClause$syntheticComment"
             }
 
-            lines.add("  $methodDecl")
+            methods.add(
+                MemberLine(
+                    key = listOf(name, descriptor, signature.orEmpty(), exceptions?.joinToString(",").orEmpty(), access.toString()),
+                    sequence = nextSequence++,
+                    line = "  $methodDecl"
+                )
+            )
             return null
+        }
+
+        private fun appendMembers(memberLines: List<MemberLine>) {
+            val linesToAppend = when (memberOrder) {
+                ClassMemberOrder.Declaration -> memberLines
+                ClassMemberOrder.Sorted -> memberLines.sortedWith(
+                    compareBy<MemberLine> { it.key.joinToString("\u0000") }
+                        .thenBy { it.sequence }
+                )
+            }
+            lines.addAll(linesToAppend.map { it.line })
         }
 
         private fun accessToModifiers(access: Int, isClass: Boolean): String {
@@ -175,5 +207,11 @@ data object ClassOutline : ClassTextifier() {
 
             return if (modifiers.isEmpty()) "" else modifiers.joinToString(" ") + " "
         }
+
+        private data class MemberLine(
+            val key: List<String>,
+            val sequence: Int,
+            val line: String
+        )
     }
 }

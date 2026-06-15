@@ -13,6 +13,7 @@ package io.github.bric3.jardiff
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
 import io.github.bric3.jardiff.FileReader.readFileAsTextIfPossible
+import io.github.bric3.jardiff.classes.ClassTextOptions
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import io.github.bric3.jardiff.output.FileComparisonData
 import java.io.Closeable
@@ -23,7 +24,7 @@ import java.util.jar.JarFile
 import kotlin.streams.asSequence
 
 /**
- * Build a diff engine to compares two paths (JAR files or directories) and reports differences.
+ * Build a diff engine to compare two paths (JAR files or directories) and reports differences.
  *
  * @param logger Logger for output messages.
  * @param outputMode Mode for outputting differences.
@@ -33,6 +34,7 @@ import kotlin.streams.asSequence
  * @param includes Set of glob patterns to include files.
  * @param excludes Set of glob patterns to exclude files.
  * @param coalesceClassFileWithExtensions Set of file extensions to coalesce with .class files.
+ * @param classTextOptions Options for class file text production.
  */
 class Differ @JvmOverloads constructor(
     private val logger: Logger,
@@ -43,8 +45,10 @@ class Differ @JvmOverloads constructor(
     private val includes: Set<String> = emptySet(),
     private val excludes: Set<String> = emptySet(),
     private val coalesceClassFileWithExtensions: Set<String> = emptySet(),
+    private val classTextOptions: ClassTextOptions = ClassTextOptions(),
 ) : AutoCloseable {
     private val childCloseables = mutableSetOf<Closeable>()
+    private val classTextifier = classTextifierProducer.create(classTextOptions)
 
     /**
      * Perform the diff operation between the left and right paths.
@@ -54,7 +58,7 @@ class Differ @JvmOverloads constructor(
     fun diff(): Boolean {
         val leftEntries = fileEntries(left)
         val rightEntries = fileEntries(right)
-        val formatter = outputMode.formatter
+        val formatter = outputMode.formatter()
 
         var hasDifferences = false
 
@@ -87,8 +91,16 @@ class Differ @JvmOverloads constructor(
         val canSkipTextComparison = outputMode == OutputMode.status && (left == null || right == null)
 
         if (!canSkipTextComparison) {
-            val leftLines = readFileAsTextIfPossible(left, classTextifierProducer, coalesceClassFileWithExtensions)
-            val rightLines = readFileAsTextIfPossible(right, classTextifierProducer, coalesceClassFileWithExtensions)
+            val leftLines = readFileAsTextIfPossible(
+                left,
+                classTextifier,
+                coalesceClassFileWithExtensions
+            )
+            val rightLines = readFileAsTextIfPossible(
+                right,
+                classTextifier,
+                coalesceClassFileWithExtensions
+            )
 
             if (left != null && right != null && leftLines == rightLines) {
                 return unchangedComparisonData(entry)

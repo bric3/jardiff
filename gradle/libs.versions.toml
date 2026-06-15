@@ -18,6 +18,7 @@ junit-platform = "1.14.4"
 [libraries]
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 javadiffutils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "javadiffutils" }
 bytebuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddyagent" }

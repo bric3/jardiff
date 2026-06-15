@@ -10,6 +10,9 @@
 
 package io.github.bric3.jardiff
 
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.ClassNode
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -131,6 +134,31 @@ fun createSemanticSameClassDirectories(destinationDir: Path, kclass: KClass<*>):
     )
 
     return leftDirectory to rightDirectory
+}
+
+fun createMemberReorderedClassDirectories(destinationDir: Path, kclass: KClass<*>): Pair<Path, Path> {
+    val leftDirectory = destinationDir.resolve("${UUID.randomUUID()}-left-member-order")
+    val rightDirectory = destinationDir.resolve("${UUID.randomUUID()}-right-member-order")
+    val classPath = Path.of(kclass.path)
+    val originalClassBytes = kclass.bytes
+        ?: throw IllegalStateException("Could not load fixture class bytes for $kclass")
+
+    Files.createDirectories(leftDirectory.resolve(classPath).parent)
+    Files.createDirectories(rightDirectory.resolve(classPath).parent)
+    Files.write(leftDirectory.resolve(classPath), originalClassBytes)
+    Files.write(rightDirectory.resolve(classPath), reorderClassMembers(originalClassBytes))
+
+    return leftDirectory to rightDirectory
+}
+
+fun reorderClassMembers(classBytes: ByteArray): ByteArray {
+    val classNode = ClassNode()
+    ClassReader(classBytes).accept(classNode, 0)
+
+    classNode.fields.reverse()
+    classNode.methods.reverse()
+
+    return ClassWriter(0).also { classNode.accept(it) }.toByteArray()
 }
 
 /**

@@ -11,8 +11,11 @@
 package io.github.bric3.jardiff.classes
 
 import io.github.bric3.jardiff.FooFixtureClass
+import io.github.bric3.jardiff.MemberOrderFixture
 import io.github.bric3.jardiff.TestClassWithSynthetics
+import io.github.bric3.jardiff.bytes
 import io.github.bric3.jardiff.fixtureClassInputStream
+import io.github.bric3.jardiff.reorderClassMembers
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
@@ -30,10 +33,30 @@ import java.io.IOException
 //    - @interface (annotation)
 //    - Abstract class
 class ClassOutlineTest {
+    private val classOutline = ClassOutline()
+
+    @Test
+    fun `outline can ignore class member order`() {
+        val original = MemberOrderFixture::class.bytes
+            ?: throw IllegalStateException("Could not load fixture class bytes")
+        val reordered = reorderClassMembers(original)
+        val sortedOptions = ClassTextOptions(memberOrder = ClassMemberOrder.Sorted)
+
+        assertThat(classOutline.toText(ByteArrayInputStream(original)))
+            .isNotEqualTo(classOutline.toText(ByteArrayInputStream(reordered)))
+
+        val sortedOutline = ClassOutline(sortedOptions)
+
+        assertThat(sortedOutline.toText(ByteArrayInputStream(original)))
+            .isEqualToIgnoringNewLines(
+                sortedOutline.toText(ByteArrayInputStream(reordered))
+            )
+    }
+
     @Test
     fun `outline class by InputStream`() {
         fixtureClassInputStream(FooFixtureClass::class).use {
-            assertThat(ClassOutline.toText(it)).isEqualToIgnoringNewLines(
+            assertThat(classOutline.toText(it)).isEqualToIgnoringNewLines(
                 """
                 package io.github.bric3.jardiff;
 
@@ -51,7 +74,7 @@ class ClassOutlineTest {
     @Test
     fun `outline contains only ABI information`() {
         fixtureClassInputStream(FooFixtureClass::class).use {
-            val lines = ClassOutline.toLines(it)
+            val lines = classOutline.toLines(it)
 
             // Should have: class declaration, constructor, method, closing brace
             assertThat(lines).hasSizeGreaterThanOrEqualTo(4)
@@ -72,7 +95,7 @@ class ClassOutlineTest {
         fixtureClassInputStream(FooFixtureClass::class).use {
             it.close()
 
-            assertThatCode { ClassOutline.toText(it) }
+            assertThatCode { classOutline.toText(it) }
                 .isInstanceOf(IOException::class.java)
         }
     }
@@ -80,7 +103,7 @@ class ClassOutlineTest {
     @Test
     fun `outline fails if InputStream not a class`() {
         ByteArrayInputStream(byteArrayOf(0x12, 0x34, 0x56)).use {
-            assertThatCode { ClassOutline.toText(it) }
+            assertThatCode { classOutline.toText(it) }
                 .isInstanceOf(Exception::class.java)
         }
     }
@@ -89,7 +112,7 @@ class ClassOutlineTest {
     fun `outline marks synthetic bridge methods`() {
         // Test the GenericBridge inner class which has synthetic bridge methods from generics
         fixtureClassInputStream(TestClassWithSynthetics.GenericBridge::class).use {
-            assertThat(ClassOutline.toText(it)).isEqualToIgnoringNewLines(
+            assertThat(classOutline.toText(it)).isEqualToIgnoringNewLines(
                 """
                 package io.github.bric3.jardiff;
 
@@ -109,7 +132,7 @@ class ClassOutlineTest {
     fun `outline marks synthetic fields from inner classes`() {
         // Test the InnerClass which has synthetic this$0 field
         fixtureClassInputStream(TestClassWithSynthetics.InnerClass::class).use {
-            assertThat(ClassOutline.toText(it)).isEqualToIgnoringNewLines(
+            assertThat(classOutline.toText(it)).isEqualToIgnoringNewLines(
                 """
                 package io.github.bric3.jardiff;
 

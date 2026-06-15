@@ -103,12 +103,12 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 * Binary diff as sha-1 hashes
 * Include glob patterns (for the relative paths inside the jars/directories)
 * Exclude glob patterns (for the relative paths inside the jars/directories)
+* Optional class member order normalization
 * Supports `--exit-code` for CI/CD pipelines
 
 Features planned for future releases... :
 * Ignoring debug information in class files (like line numbers, local variable names, etc.)
 * Append Koltin/Scala/Groovy detection to regular class text output
-* Sort members alphabetically
 * Replace ASM by the Class file API (Need JDK 24+)
 * Better terminal integration, ideas: pager support, colors configuration, auto-detection of `delta`, etc. (Might need FFM, need JDK 22+)
 
@@ -155,6 +155,9 @@ Compares two JAR files or directories and reports differences.
                        That is, it exits with 1 if there were differences
                        and 0 means no differences.
   -h, --help           Show this help message and exit.
+      --ignore-member-order
+                       Ignore class member declaration order when
+                       comparing class files.
   -i, --include=<glob>[,<glob>...]
                        Glob include patterns (comma separated), e.g.
                        '**/raw*/**', or '**/*.bin'.

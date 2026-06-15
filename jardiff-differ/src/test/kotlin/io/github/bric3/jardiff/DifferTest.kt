@@ -13,6 +13,8 @@ package io.github.bric3.jardiff
 import io.github.bric3.jardiff.OutputMode.diff
 import io.github.bric3.jardiff.OutputMode.stat
 import io.github.bric3.jardiff.OutputMode.status
+import io.github.bric3.jardiff.classes.ClassMemberOrder
+import io.github.bric3.jardiff.classes.ClassTextOptions
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -23,6 +25,9 @@ import java.nio.file.Path
 class DifferTest {
     @TempDir
     lateinit var tempDir: Path
+
+    private val fixtureDirectoryExcludes = setOf("*.md", "*.properties", "MemberOrderFixture.class")
+    private val fixtureLocationExcludes = fixtureDirectoryExcludes + "**/TestClassWithSynthetics*.class"
 
     @Test
     fun `should detect no differences in same jar using simple mode`() {
@@ -63,7 +68,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(status, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(status, fixtureClassesOutput, singleClassJar, excludes = fixtureDirectoryExcludes)
 
         assertThat(output).isEqualTo(
             """
@@ -82,7 +87,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(diff, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(diff, fixtureClassesOutput, singleClassJar, excludes = fixtureDirectoryExcludes)
 
         assertThat(output).isEqualTo(
             """
@@ -113,7 +118,7 @@ class DifferTest {
             outputMode = status,
             left = fixtureClassesOutput,
             right = singleClassJar,
-            excludes = setOf("*.md", "*.properties"),
+            excludes = fixtureDirectoryExcludes,
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -147,6 +152,29 @@ class DifferTest {
     }
 
     @Test
+    fun `should ignore class member order in all output modes when enabled`() {
+        val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(tempDir, MemberOrderFixture::class)
+        val sortedOptions = ClassTextOptions(memberOrder = ClassMemberOrder.Sorted)
+        val fixturePath = MemberOrderFixture::class.path
+
+        assertThat(diff(status, leftDirectory, rightDirectory))
+            .describedAs("member order should be reported by default")
+            .isEqualTo("${red("M ")} $fixturePath")
+
+        assertThat(diff(diff, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
+            .isEmpty()
+        assertThat(diff(status, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
+            .isEqualTo("${green("  ")} $fixturePath")
+        assertThat(diff(stat, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
+            .isEqualTo(
+                """
+                | $fixturePath | 0
+                | 0 files changed, 0 insertions(+), 0 deletions(-)
+                """.trimMargin()
+            )
+    }
+
+    @Test
     fun `should find no difference on coalesced classes using diff mode`() {
         val singleClassJar = createJarFromResources(
             tempDir,
@@ -158,7 +186,7 @@ class DifferTest {
         val output = diff(diff,
             fixtureClassesOutput,
             singleClassJar,
-            excludes = setOf("*.md", "*.properties"),
+            excludes = fixtureDirectoryExcludes,
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -199,7 +227,7 @@ class DifferTest {
             outputMode = status,
             left = FooFixtureClass::class.location,
             right = singleClassJar,
-            excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
+            excludes = fixtureLocationExcludes,
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -233,7 +261,7 @@ class DifferTest {
         val output = diff(diff,
             FooFixtureClass::class.location,
             singleClassJar,
-            excludes = setOf("*.md", "*.properties", "**/TestClassWithSynthetics*.class"),
+            excludes = fixtureLocationExcludes,
             coalesceClassFileWithExts = setOf("classdata")
         )
 
@@ -301,7 +329,7 @@ class DifferTest {
             FooFixtureClass::class.path
         )
 
-        val output = diff(stat, fixtureClassesOutput, singleClassJar, excludes = setOf("*.md", "*.properties"))
+        val output = diff(stat, fixtureClassesOutput, singleClassJar, excludes = fixtureDirectoryExcludes)
 
         assertThat(output).isEqualTo(
             """
@@ -361,6 +389,7 @@ class DifferTest {
         right: Path,
         excludes: Set<String> = emptySet(),
         coalesceClassFileWithExts: Set<String> = emptySet(),
+        classTextOptions: ClassTextOptions = ClassTextOptions(),
     ): String {
         val output = StringWriter()
         Differ(
@@ -371,6 +400,7 @@ class DifferTest {
             right = PathToDiff.of(PathToDiff.LeftOrRight.RIGHT, right),
             excludes = excludes,
             coalesceClassFileWithExtensions = coalesceClassFileWithExts,
+            classTextOptions = classTextOptions,
         ).use { it.diff() }
         return output.toString().trimEnd()
     }

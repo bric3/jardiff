@@ -6,11 +6,11 @@ package io.github.bric3.jardiff.classes
  * These are used to produce a text output from class files
  */
 @Suppress("EnumEntryName", "unused")
-enum class ClassTextifierProducer(producer: () -> ClassTextifier) {
+enum class ClassTextifierProducer(private val producer: (ClassTextOptions) -> ClassTextifier) {
     /**
      * [AsmTextifier] - produces a text representation of the class using ASM's Textifier
      */
-    `asm-textifier`({ AsmTextifier() }),
+    `asm-textifier`({ options -> AsmTextifier(options = options) }),
 
     /**
      * [ClassFileMajorVersion] - produces a text representation of the class file major version
@@ -20,10 +20,10 @@ enum class ClassTextifierProducer(producer: () -> ClassTextifier) {
     /**
      * [ClassOutline] - produces a text outline of the class structure
      */
-    `class-outline`({ ClassOutline })
+    `class-outline`({ options -> ClassOutline(options) })
     // javap
     ;
 
-    /** The instance of the [ClassTextifier] produced by this producer */
-    val instance by lazy { producer() }
+    /** Create a [ClassTextifier] configured for one comparison run. */
+    fun create(options: ClassTextOptions = ClassTextOptions()) = producer(options)
 }

@@ -11,6 +11,8 @@
 package io.github.bric3.jardiff.app
 
 import io.github.bric3.jardiff.classes.ClassTextifierProducer
+import io.github.bric3.jardiff.classes.ClassMemberOrder
+import io.github.bric3.jardiff.classes.ClassTextOptions
 import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
@@ -140,6 +142,15 @@ class JardiffMain : Callable<Int> {
     var classTextifierProducer = ClassTextifierProducer.`asm-textifier`
 
     @Option(
+        names = ["--ignore-member-order"],
+        description = [
+            "Ignore class member declaration order when",
+            "comparing class files."
+        ]
+    )
+    var ignoreMemberOrder = false
+
+    @Option(
         names = ["-v"],
         description = [
             "Specify multiple -v options to increase verbosity.",
@@ -213,7 +224,14 @@ class JardiffMain : Callable<Int> {
             right = right,
             includes = includes.filterNot { it.isBlank() }.toSet(),
             excludes = excludes.filterNot { it.isBlank() }.toSet(),
-            coalesceClassFileWithExtensions = coalesceClassFileWithExtensions
+            coalesceClassFileWithExtensions = coalesceClassFileWithExtensions,
+            classTextOptions = ClassTextOptions(
+                memberOrder = if (ignoreMemberOrder) {
+                    ClassMemberOrder.Sorted
+                } else {
+                    ClassMemberOrder.Declaration
+                }
+            )
         ).use {
             it.diff()
         }
@@ -253,4 +271,3 @@ class JardiffMain : Callable<Int> {
         }
     }
 }
-
