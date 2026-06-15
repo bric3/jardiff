@@ -1,10 +1,10 @@
 [versions]
 gradlePlugin-kotlin = "2.4.0"
-gradlePlugin-shadow = "9.3.0"
+gradlePlugin-shadow = "9.4.2"
 gradlePlugin-semver = "0.9.0"
-gradlePlugin-dokka = "2.1.0"
-gradlePlugin-graalvm = "0.11.1"
-gradlePlugin-nmcp = "1.4.3"
+gradlePlugin-dokka = "2.2.0"
+gradlePlugin-graalvm = "1.1.2"
+gradlePlugin-nmcp = "1.5.0"
 
 picocli = "4.7.7"
 asm = "9.8"

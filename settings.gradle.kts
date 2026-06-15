@@ -14,8 +14,8 @@ pluginManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-    id("com.gradle.develocity") version "4.3"
-    id("com.gradleup.nmcp.settings") version "1.4.3"
+    id("com.gradle.develocity") version "4.4.2"
+    id("com.gradleup.nmcp.settings") version "1.5.0"
     id("com.javiersc.semver") version "0.9.0"
 }
 
