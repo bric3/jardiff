@@ -65,6 +65,15 @@ class AsmTextifier @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Textifier variant that normalizes member declaration order within one class.
+     *
+     * For a given class, `m` is the number of captured members. Sorting those members costs
+     * `O(m log m)` comparisons: comparison-based sorting repeatedly splits or merges the member
+     * list through about `log2(m)` levels, and each level touches the `m` members. If `n` classes
+     * are compared in one run, each class is sorted independently, for a total cost of
+     * `sum(m_i log m_i)`.
+     */
     private class MemberSortingTextifier : Textifier(Opcodes.ASM9) {
         private val members = mutableListOf<MemberText>()
         private var nextSequence = 0
@@ -76,7 +85,7 @@ class AsmTextifier @JvmOverloads constructor(
         ): Textifier {
             return captureMember(
                 MemberKind.RecordComponent,
-                key = listOf(name, descriptor, signature.orEmpty())
+                key = MemberKey.of(name, descriptor, signature.orEmpty())
             ) {
                 super.visitRecordComponent(name, descriptor, signature) as Textifier
             }
@@ -91,7 +100,7 @@ class AsmTextifier @JvmOverloads constructor(
         ): Textifier {
             return captureMember(
                 MemberKind.Field,
-                key = listOf(name, descriptor, signature.orEmpty(), access.toString())
+                key = MemberKey.of(name, descriptor, signature.orEmpty(), access.toString())
             ) {
                 super.visitField(access, name, descriptor, signature, value)
             }
@@ -106,13 +115,13 @@ class AsmTextifier @JvmOverloads constructor(
         ): Textifier {
             return captureMember(
                 MemberKind.Method,
-                key = buildList {
+                key = MemberKey.of(buildList {
                     add(name)
                     add(descriptor)
                     add(signature.orEmpty())
-                    add(exceptions?.joinToString(",").orEmpty())
+                    addAll(exceptions.orEmpty())
                     add(access.toString())
-                }
+                })
             ) {
                 super.visitMethod(access, name, descriptor, signature, exceptions) as Textifier
             }
@@ -127,20 +136,20 @@ class AsmTextifier @JvmOverloads constructor(
 
         private fun captureMember(
             kind: MemberKind,
-            key: List<String>,
+            key: MemberKey,
             visit: () -> Textifier
         ): Textifier {
             val startIndex = text.size
             val memberPrinter = visit()
             val memberText = text.subList(startIndex, text.size).toList()
             text.subList(startIndex, text.size).clear()
-            members.add(MemberText(kind, key.joinToString("\u0000"), nextSequence++, memberText))
+            members.add(MemberText(kind, key, nextSequence++, memberText))
             return memberPrinter
         }
 
         private data class MemberText(
             val kind: MemberKind,
-            val key: String,
+            val key: MemberKey,
             val sequence: Int,
             val text: List<Any>
         )
@@ -149,6 +158,30 @@ class AsmTextifier @JvmOverloads constructor(
             RecordComponent(0),
             Field(1),
             Method(2)
+        }
+
+        private class MemberKey private constructor(
+            private val components: List<String>
+        ) : Comparable<MemberKey> {
+            override fun compareTo(other: MemberKey): Int {
+                repeat(minOf(components.size, other.components.size)) { index ->
+                    val comparison = components[index].compareTo(other.components[index])
+                    if (comparison != 0) {
+                        return comparison
+                    }
+                }
+                return components.size.compareTo(other.components.size)
+            }
+
+            companion object {
+                fun of(vararg components: String): MemberKey {
+                    return MemberKey(components.asList())
+                }
+
+                fun of(components: List<String>): MemberKey {
+                    return MemberKey(components.toList())
+                }
+            }
         }
 
         private companion object {

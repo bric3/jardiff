@@ -14,14 +14,14 @@ import io.github.bric3.jardiff.FooFixtureClass
 import io.github.bric3.jardiff.MemberOrderFixture
 import io.github.bric3.jardiff.bytes
 import io.github.bric3.jardiff.fixtureClassInputStream
-import io.github.bric3.jardiff.path
 import io.github.bric3.jardiff.reorderClassMembers
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Opcodes
 import java.io.ByteArrayInputStream
 import java.io.IOException
-import java.io.InputStream
 
 class AsmClassTextifierTest {
     @Test
@@ -40,6 +40,23 @@ class AsmClassTextifierTest {
             .isEqualToIgnoringNewLines(
                 sortedTextifier.toText(ByteArrayInputStream(reordered))
             )
+    }
+
+    @Test
+    fun `textify sorts member keys without delimiter collisions`() {
+        val firstField = "a" to "b\u0000c"
+        val secondField = "a\u0000b" to "c"
+        val left = classWithFields(firstField, secondField)
+        val right = classWithFields(secondField, firstField)
+        val sortedOptions = ClassTextOptions(memberOrder = ClassMemberOrder.Sorted)
+
+        assertThat(AsmTextifier().toText(ByteArrayInputStream(left)))
+            .isNotEqualTo(AsmTextifier().toText(ByteArrayInputStream(right)))
+
+        val sortedTextifier = AsmTextifier(options = sortedOptions)
+
+        assertThat(sortedTextifier.toText(ByteArrayInputStream(left)))
+            .isEqualTo(sortedTextifier.toText(ByteArrayInputStream(right)))
     }
 
     @Test
@@ -139,5 +156,22 @@ class AsmClassTextifierTest {
             assertThatCode { AsmTextifier().toText(it) }
                 .isInstanceOf(Exception::class.java)
         }
+    }
+
+    private fun classWithFields(vararg fields: Pair<String, String>): ByteArray {
+        return ClassWriter(0).also { classWriter ->
+            classWriter.visit(
+                Opcodes.V11,
+                Opcodes.ACC_PUBLIC,
+                "io/github/bric3/jardiff/SortKeyDelimiterCollision",
+                null,
+                "java/lang/Object",
+                null
+            )
+            fields.forEach { (name, descriptor) ->
+                classWriter.visitField(Opcodes.ACC_PUBLIC, name, descriptor, null, null).visitEnd()
+            }
+            classWriter.visitEnd()
+        }.toByteArray()
     }
 }
