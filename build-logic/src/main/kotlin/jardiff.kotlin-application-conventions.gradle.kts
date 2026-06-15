@@ -49,7 +49,6 @@ tasks {
     register<Copy>("install") {
         from(executableShadowJar)
         into(File(System.getProperty("user.home"), "bin"))
-        rename { "jardiff" }
     }
 
     // Make build depend on both regular and executable JARs
@@ -78,5 +77,11 @@ tasks {
     }
     shadowDistZip {
         enabled = false
+    }
+}
+
+afterEvaluate {
+    tasks.named<Copy>("install") {
+        rename("^.*$", application.applicationName)
     }
 }

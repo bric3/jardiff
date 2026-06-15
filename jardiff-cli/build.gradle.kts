@@ -14,6 +14,8 @@ plugins {
     id("jardiff.graalvm-native-image-conventions")
 }
 
+val commandName = "jardiff"
+
 dependencies {
     implementation(project(":jardiff-differ"))
     implementation(libs.picocli)
@@ -21,11 +23,12 @@ dependencies {
 
 application {
     mainClass = "io.github.bric3.jardiff.app.Main"
+    applicationName = commandName
 }
 
 
 tasks {
-    // use ./gradlew :app:run --args="arg1 arg2"
+    // use ./gradlew :jardiff-cli:run --args="arg1 arg2"
     val run by existing(JavaExec::class) {
     }
 

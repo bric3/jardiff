@@ -40,6 +40,24 @@ val isCI = providers.environmentVariable("CI")
     .orElse(providers.environmentVariable("GITHUB_ACTIONS"))
     .isPresent
 
+val nativeImageConfigInstructions = """
+    To generate native image configuration, run:
+      ./gradlew -Pagent ${project.path}:run --args="<jar1> <jar2>"
+      ./gradlew -Pagent ${project.path}:test
+
+    Configuration will be merged with existing files in:
+      src/main/resources/META-INF/native-image/
+""".trimIndent()
+
+val nativeImageName = providers.provider {
+    val commandName = application.applicationName
+    if (isCI) {
+        "$commandName-${getTargetTriple()}"
+    } else {
+        commandName
+    }
+}
+
 graalvmNative {
     toolchainDetection = true
 
@@ -47,11 +65,7 @@ graalvmNative {
         named("main") {
             javaLauncher.set(graalvmLauncher)
 
-            imageName = if (isCI) {
-                "${project.name}-${getTargetTriple()}"
-            } else {
-                project.name
-            }
+            imageName.set(nativeImageName)
             mainClass.set(application.mainClass)
 
             buildArgs.addAll(
@@ -99,18 +113,9 @@ tasks {
         dependsOn("shadowJar")
     }
 
-    register("generateNativeImageConfig") {
+    register<NativeImageConfigHelpTask>("generateNativeImageConfig") {
         group = "graalvm"
         description = "Generate native image configuration using the tracing agent"
-        doLast {
-            println("""
-                To generate native image configuration, run:
-                  ./gradlew -Pagent :jardiff:run --args="<jar1> <jar2>"
-                  ./gradlew -Pagent :jardiff:test
-
-                Configuration will be merged with existing files in:
-                  src/main/resources/META-INF/native-image/
-            """.trimIndent())
-        }
+        instructions.set(nativeImageConfigInstructions)
     }
 }

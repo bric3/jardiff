@@ -36,10 +36,10 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "jardiff-root"
+rootProject.name = "jardiff"
 
 include(
-    "jardiff",
+    "jardiff-cli",
     "jardiff-differ"
 )
 
