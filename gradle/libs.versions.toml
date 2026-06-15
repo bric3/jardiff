@@ -7,13 +7,13 @@ gradlePlugin-graalvm = "1.1.2"
 gradlePlugin-nmcp = "1.5.0"
 
 picocli = "4.7.7"
-asm = "9.8"
-javadiffutils = "4.15"
-bytebuddyagent = "1.17.7"
-tikka = "3.2.2"
+asm = "9.10.1"
+javadiffutils = "4.17"
+bytebuddyagent = "1.18.9"
+tikka = "3.3.1"
 
-junit5 = "5.13.4"
-junit-platform = "1.13.4"
+junit5 = "5.14.4"
+junit-platform = "1.14.4"
 
 [libraries]
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
@@ -30,7 +30,7 @@ junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", vers
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 
-assertj-core = { module = "org.assertj:assertj-core", version = "3.27.4" }
+assertj-core = { module = "org.assertj:assertj-core", version = "3.27.7" }
 
 gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "gradlePlugin-kotlin" }
 gradlePlugin-shadow = { module = "com.gradleup.shadow:shadow-gradle-plugin", version.ref = "gradlePlugin-shadow" }
@@ -41,4 +41,3 @@ gradlePlugin-nmcp = { module = "com.gradleup.nmcp:com.gradleup.nmcp.gradle.plugi
 
 [bundles]
 asm = ["asm", "asm-util"]
-
