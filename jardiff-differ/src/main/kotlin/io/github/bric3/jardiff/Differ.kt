@@ -194,11 +194,13 @@ class Differ @JvmOverloads constructor(
             }
 
             is PathToDiff.Directory -> {
-                Files.walk(pathToDiff.path).asSequence()
-                    .filter { Files.isRegularFile(it) }
-                    .map { FileAccess.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
-                    .filter(pathFilter)
-                    .associateBy { it.relativePath }
+                Files.walk(pathToDiff.path).use {
+                    it.asSequence()
+                        .filter { Files.isRegularFile(it) }
+                        .map { FileAccess.FromDirectory(pathToDiff.path, pathToDiff.path.relativize(it)) }
+                        .filter(pathFilter)
+                        .associateBy { it.relativePath }
+                }
             }
         }
     }
