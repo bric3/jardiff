@@ -152,25 +152,40 @@ class DifferTest {
     }
 
     @Test
-    fun `should ignore class member order in all output modes when enabled`() {
-        val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(tempDir, MemberOrderFixture::class)
+    fun `should ignore class member order for multiple classes in all output modes when enabled`() {
+        val fixturePaths = listOf(FooFixtureClass::class.path, MemberOrderFixture::class.path).sorted()
+        val maxPathLength = fixturePaths.maxOf { it.length }
+        val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(
+            tempDir,
+            FooFixtureClass::class,
+            MemberOrderFixture::class
+        )
         val sortedOptions = ClassTextOptions(memberOrder = ClassMemberOrder.Sorted)
-        val fixturePath = MemberOrderFixture::class.path
 
         assertThat(diff(status, leftDirectory, rightDirectory))
             .describedAs("member order should be reported by default")
-            .isEqualTo("${red("M ")} $fixturePath")
+            .isEqualTo(
+                fixturePaths.joinToString("\n") {
+                    "${red("M ")} $it"
+                }
+            )
 
         assertThat(diff(diff, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
             .isEmpty()
         assertThat(diff(status, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
-            .isEqualTo("${green("  ")} $fixturePath")
+            .isEqualTo(
+                fixturePaths.joinToString("\n") {
+                    "${green("  ")} $it"
+                }
+            )
         assertThat(diff(stat, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
             .isEqualTo(
-                """
-                | $fixturePath | 0
-                | 0 files changed, 0 insertions(+), 0 deletions(-)
-                """.trimMargin()
+                fixturePaths.joinToString(
+                    separator = "\n",
+                    postfix = "\n 0 files changed, 0 insertions(+), 0 deletions(-)"
+                ) {
+                    " ${it.padEnd(maxPathLength)} | 0"
+                }
             )
     }
 

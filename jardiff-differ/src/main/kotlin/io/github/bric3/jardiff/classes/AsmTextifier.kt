@@ -119,11 +119,9 @@ class AsmTextifier @JvmOverloads constructor(
         }
 
         override fun visitClassEnd() {
-            members
-                .sortedWith(compareBy<MemberText> { it.kind.order }
-                    .thenBy { it.key.joinToString("\u0000") }
-                    .thenBy { it.sequence })
-                .forEach { text.addAll(it.text) }
+            members.sortWith(memberComparator)
+            members.forEach { text.addAll(it.text) }
+            members.clear()
             super.visitClassEnd()
         }
 
@@ -136,13 +134,13 @@ class AsmTextifier @JvmOverloads constructor(
             val memberPrinter = visit()
             val memberText = text.subList(startIndex, text.size).toList()
             text.subList(startIndex, text.size).clear()
-            members.add(MemberText(kind, key, nextSequence++, memberText))
+            members.add(MemberText(kind, key.joinToString("\u0000"), nextSequence++, memberText))
             return memberPrinter
         }
 
         private data class MemberText(
             val kind: MemberKind,
-            val key: List<String>,
+            val key: String,
             val sequence: Int,
             val text: List<Any>
         )
@@ -151,6 +149,12 @@ class AsmTextifier @JvmOverloads constructor(
             RecordComponent(0),
             Field(1),
             Method(2)
+        }
+
+        private companion object {
+            val memberComparator = compareBy<MemberText> { it.kind.order }
+                .thenBy { it.key }
+                .thenBy { it.sequence }
         }
     }
 }

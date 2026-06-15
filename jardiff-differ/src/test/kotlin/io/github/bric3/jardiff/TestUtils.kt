@@ -136,17 +136,22 @@ fun createSemanticSameClassDirectories(destinationDir: Path, kclass: KClass<*>):
     return leftDirectory to rightDirectory
 }
 
-fun createMemberReorderedClassDirectories(destinationDir: Path, kclass: KClass<*>): Pair<Path, Path> {
+fun createMemberReorderedClassDirectories(destinationDir: Path, vararg kclasses: KClass<*>): Pair<Path, Path> {
+    require(kclasses.isNotEmpty()) { "At least one class is required" }
+
     val leftDirectory = destinationDir.resolve("${UUID.randomUUID()}-left-member-order")
     val rightDirectory = destinationDir.resolve("${UUID.randomUUID()}-right-member-order")
-    val classPath = Path.of(kclass.path)
-    val originalClassBytes = kclass.bytes
-        ?: throw IllegalStateException("Could not load fixture class bytes for $kclass")
 
-    Files.createDirectories(leftDirectory.resolve(classPath).parent)
-    Files.createDirectories(rightDirectory.resolve(classPath).parent)
-    Files.write(leftDirectory.resolve(classPath), originalClassBytes)
-    Files.write(rightDirectory.resolve(classPath), reorderClassMembers(originalClassBytes))
+    kclasses.forEach { kclass ->
+        val classPath = Path.of(kclass.path)
+        val originalClassBytes = kclass.bytes
+            ?: throw IllegalStateException("Could not load fixture class bytes for $kclass")
+
+        Files.createDirectories(leftDirectory.resolve(classPath).parent)
+        Files.createDirectories(rightDirectory.resolve(classPath).parent)
+        Files.write(leftDirectory.resolve(classPath), originalClassBytes)
+        Files.write(rightDirectory.resolve(classPath), reorderClassMembers(originalClassBytes))
+    }
 
     return leftDirectory to rightDirectory
 }
