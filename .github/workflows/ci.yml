@@ -72,7 +72,7 @@ jobs:
         if: success()
         with:
           name: jardiff-jar
-          path: jardiff/build/libs/*.jar
+          path: jardiff-cli/build/libs/*.jar
           retention-days: 7
 
       - name: Publish Test Report
@@ -91,7 +91,7 @@ jobs:
         with:
           name: test-reports
           path: |
-            jardiff/build/reports/tests/
+            jardiff-cli/build/reports/tests/
             jardiff-differ/build/reports/tests/
           retention-days: 7
 
@@ -101,8 +101,8 @@ jobs:
     with:
       java-version: '25'
       artifact-prefix: 'jardiff'
-      gradle-task: 'nativeCompile'
-      native-build-path: 'jardiff/build/native/nativeCompile'
+      gradle-task: ':jardiff-cli:nativeCompile'
+      native-build-path: 'jardiff-cli/build/native/nativeCompile'
       os-matrix: '["ubuntu-latest", "macos-latest"]'
 
   release:
