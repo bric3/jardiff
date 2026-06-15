@@ -68,7 +68,7 @@ class DifferTest {
         assertThat(output).isEqualTo(
             """
             ${red("D ")} META-INF/MANIFEST.MF
-            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
@@ -92,10 +92,10 @@ class DifferTest {
             +Manifest-Version: 1.0
             +Created-By: TestUtils
             +
-            --- META-INF/jardiff-differ_testFixtures.kotlin_module
+            --- META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
+            -FILE SHA-1: 0648054695c61134386edfc976b074d50c3226a4
             """.trimIndent()
         )
     }
@@ -120,7 +120,7 @@ class DifferTest {
         assertThat(output).describedAs("no class differences").isEqualTo(
             """
             ${red("D ")} META-INF/MANIFEST.MF
-            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
@@ -170,10 +170,10 @@ class DifferTest {
             +Manifest-Version: 1.0
             +Created-By: TestUtils
             +
-            --- META-INF/jardiff-differ_testFixtures.kotlin_module
+            --- META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
+            -FILE SHA-1: 0648054695c61134386edfc976b074d50c3226a4
             """.trimIndent()
         )
     }
@@ -206,7 +206,7 @@ class DifferTest {
         assertThat(output).describedAs("no class differences").isEqualTo(
             """
             ${red("M ")} META-INF/MANIFEST.MF
-            ${red(" D")} META-INF/jardiff-differ_testFixtures.kotlin_module
+            ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             ${red("D ")} io/github/bric3/jardiff/FooFixtureClass.classdata
             """.trimIndent()
@@ -245,10 +245,10 @@ class DifferTest {
              Manifest-Version: 1.0
             +Created-By: TestUtils
              
-            --- META-INF/jardiff-differ_testFixtures.kotlin_module
+            --- META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
             +++ /dev/null
             @@ -1,1 +1,0 @@
-            -FILE SHA-1: f5d556b1d36c1500736285c79e957a9363d2a4ac
+            -FILE SHA-1: 0648054695c61134386edfc976b074d50c3226a4
             --- /dev/null
             +++ io/github/bric3/jardiff/FooFixtureClass.classdata
             @@ -0,0 +1,37 @@
@@ -258,7 +258,7 @@ class DifferTest {
             +
             +  // compiled from: FooFixtureClass.kt
             +
-            +  @Lkotlin/Metadata;(mv={2, 3, 0}, k=1, xi=48, d1={"\u0000\u0012\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\u0008\u0003\n\u0002\u0010\u0002\n\u0000\u0018\u00002\u00020\u0001B\u0007\u00a2\u0006\u0004\u0008\u0002\u0010\u0003J\u0006\u0010\u0004\u001a\u00020\u0005\u00a8\u0006\u0006"}, d2={"Lio/github/bric3/jardiff/FooFixtureClass;", "", "<init>", "()V", "bar", "", "jardiff-differ_testFixtures"})
+            +  @Lkotlin/Metadata;(mv={2, 4, 0}, k=1, xi=48, d1={"\u0000\u0012\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\u0008\u0003\n\u0002\u0010\u0002\n\u0000\u0018\u00002\u00020\u0001B\u0007\u00a2\u0006\u0004\u0008\u0002\u0010\u0003J\u0006\u0010\u0004\u001a\u00020\u0005\u00a8\u0006\u0006"}, d2={"Lio/github/bric3/jardiff/FooFixtureClass;", "", "<init>", "()V", "bar", "", "io.github.bric3.jardiff:jardiff-differ_testFixtures"})
             +
             +  // access flags 0x1
             +  public <init>()V
@@ -305,9 +305,9 @@ class DifferTest {
 
         assertThat(output).isEqualTo(
             """
-            | META-INF/MANIFEST.MF                               | 3 ${green("+++")}${red("")}
-            | META-INF/jardiff-differ_testFixtures.kotlin_module | 1 ${green("")}${red("-")}
-            | io/github/bric3/jardiff/FooFixtureClass.class      | 0
+            | META-INF/MANIFEST.MF                                                       | 3 ${green("+++")}${red("")}
+            | META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module | 1 ${green("")}${red("-")}
+            | io/github/bric3/jardiff/FooFixtureClass.class                              | 0
             | 2 files changed, 3 insertions(+), 1 deletions(-)
             """.trimMargin() // seems like trimIndent() eats the leading space if each has one.
         )
