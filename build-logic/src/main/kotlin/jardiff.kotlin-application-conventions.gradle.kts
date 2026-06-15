@@ -47,6 +47,7 @@ tasks {
     }
 
     register<Copy>("install") {
+        description = "Install `jardiff` command to `\$HOME/bin`"
         from(executableShadowJar)
         into(File(System.getProperty("user.home"), "bin"))
     }
