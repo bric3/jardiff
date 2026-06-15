@@ -19,11 +19,7 @@ import java.io.Closeable
 import java.io.IOException
 import java.nio.file.FileSystems
 import java.nio.file.Files
-import java.nio.file.Path
 import java.util.jar.JarFile
-import kotlin.io.path.extension
-import kotlin.io.path.nameWithoutExtension
-import kotlin.io.path.pathString
 import kotlin.streams.asSequence
 
 /**
@@ -184,8 +180,8 @@ class Differ @JvmOverloads constructor(
     }
 
     private fun makeListOfFilesToDiff(
-        leftEntries: Map<Path, FileAccess>,
-        rightEntries: Map<Path, FileAccess>
+        leftEntries: Map<ResourcePath, FileAccess>,
+        rightEntries: Map<ResourcePath, FileAccess>
     ): List<FileEntryToDiff> {
         val classExtensions = coalesceClassFileWithExtensions + "class"
 
@@ -196,7 +192,7 @@ class Differ @JvmOverloads constructor(
                 when {
                     path.extension in classExtensions -> {
                         CoalescedClassEntry(
-                            path.parent?.pathString ?: "",
+                            path.parentPath,
                             path.nameWithoutExtension,
                         ).apply {
                             originalPath = path
@@ -213,8 +209,9 @@ class Differ @JvmOverloads constructor(
             allKeys.forEach { entry ->
                 when (entry) {
                     is CoalescedClassEntry -> {
+                        val originalPath = entry.originalPath ?: error("Original path not set for $entry")
                         val aliasedPaths = classExtensions.map {
-                            Path.of(entry.parentPath, "${entry.classFileName}.$it")
+                            ResourcePath.of(entry.parentPath, "${entry.classFileName}.$it")
                         }
 
                         val leftClasses = aliasedPaths.mapNotNull { leftEntries[it] }
@@ -225,10 +222,10 @@ class Differ @JvmOverloads constructor(
                             (leftClasses.count() <= 1) and (rightClasses.count() <= 1) -> {
                                 // entry can be coalesced, but only if it wasn't already added
                                 if (coalescedEntries.add(entry)) {
-                                    logger.verbose2("Coalesced entry ${entry.originalPath}")
+                                    logger.verbose2("Coalesced entry $originalPath")
                                     add(
                                         FileEntryToDiff(
-                                            Path.of(entry.parentPath, "${entry.classFileName}.class").toString(),
+                                            ResourcePath.of(entry.parentPath, "${entry.classFileName}.class").toString(),
                                             leftClasses.singleOrNull(),
                                             rightClasses.singleOrNull(),
                                         )
@@ -236,12 +233,12 @@ class Differ @JvmOverloads constructor(
                                 }
                             }
                             else -> {
-                                logger.verbose2("Coalescing disabled for ${entry.originalPath} due to multiple files one one side")
+                                logger.verbose2("Coalescing disabled for $originalPath due to multiple files one one side")
                                 add(
                                     FileEntryToDiff(
-                                        entry.originalPath.toString(),
-                                        leftEntries[entry.originalPath],
-                                        rightEntries[entry.originalPath],
+                                        originalPath.toString(),
+                                        leftEntries[originalPath],
+                                        rightEntries[originalPath],
                                     )
                                 )
                             }
@@ -251,7 +248,7 @@ class Differ @JvmOverloads constructor(
                     is RegularEntry -> {
                         add(
                             FileEntryToDiff(
-                                entry.path.pathString,
+                                entry.path.toString(),
                                 leftEntries[entry.path],
                                 rightEntries[entry.path]
                             )
@@ -262,7 +259,7 @@ class Differ @JvmOverloads constructor(
         }
     }
 
-    private fun fileEntries(pathToDiff: PathToDiff): Map<Path, FileAccess> {
+    private fun fileEntries(pathToDiff: PathToDiff): Map<ResourcePath, FileAccess> {
         val pathFilter = pathFilter()
         return when (pathToDiff) {
             is PathToDiff.Jar -> {
@@ -271,7 +268,7 @@ class Differ @JvmOverloads constructor(
                 }
                 jf.entries().asSequence()
                     .filter { it.isDirectory.not() }
-                    .map { FileAccess.FromJar(pathToDiff.path, Path.of(it.name), jf, it) }
+                    .map { FileAccess.FromJar(pathToDiff.path, jf, it) }
                     .filter(pathFilter)
                     .associateBy { it.relativePath }
             }
@@ -303,15 +300,13 @@ class Differ @JvmOverloads constructor(
 
         return { file ->
             // If includes is specified, file must match at least one include pattern
-            val matchesInclude = if (includeMatchers.isEmpty()) {
-                true
-            } else {
-                includeMatchers.any { it.matches(file.relativePath) }
+            val matchesInclude = includeMatchers.isEmpty() || includeMatchers.any {
+                it.matches(file.relativePath.toPath())
             }
 
             // Then check if file is excluded
             val notExcluded = excludeMatchers.none {
-                it.matches(file.relativePath)
+                it.matches(file.relativePath.toPath())
             }
 
             val accepted = matchesInclude && notExcluded
@@ -353,11 +348,11 @@ class Differ @JvmOverloads constructor(
         val parentPath: String,
         val classFileName: String,
     ) : FileEntry() {
-        lateinit var originalPath: Path
+        var originalPath: ResourcePath? = null
     }
 
     data class RegularEntry(
-        val path: Path
+        val path: ResourcePath
     ) : FileEntry()
 
     data class FileEntryToDiff(

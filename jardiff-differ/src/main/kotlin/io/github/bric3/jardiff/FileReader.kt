@@ -15,10 +15,7 @@ import org.apache.tika.parser.txt.CharsetDetector
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.nio.charset.Charset
-import java.nio.file.Path
 import java.security.MessageDigest
-import kotlin.io.path.extension
-import kotlin.io.path.name
 
 
 object FileReader {
@@ -75,10 +72,10 @@ object FileReader {
         }
     }
 
-    private fun encodingHint(relativePath: Path): String? {
+    private fun encodingHint(relativePath: ResourcePath): String? {
         return when {
             // MANIFEST.MF is UTF-8 : https://docs.oracle.com/javase/8/docs/technotes/guides/jar/jar.html#Name-Value_pairs_and_Sections
-            relativePath.name == "MANIFEST.MF" -> "UTF-8"
+            relativePath.fileName == "MANIFEST.MF" -> "UTF-8"
             else -> null
         }
     }
