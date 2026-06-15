@@ -10,9 +10,9 @@
 
 package io.github.bric3.jardiff.app
 
-import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import io.github.bric3.jardiff.classes.ClassMemberOrder
 import io.github.bric3.jardiff.classes.ClassTextOptions
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
@@ -45,7 +45,7 @@ import kotlin.system.exitProcess
 class JardiffMain : Callable<Int> {
     // Note: Description lines should be at most 50 characters long
     // for proper formatting in the help message by picocli.
-    
+
     @Parameters(
         index = "0",
         description = ["The JAR file or directory to compare."]
@@ -141,14 +141,30 @@ class JardiffMain : Callable<Int> {
     )
     var classTextifierProducer = ClassTextifierProducer.`asm-textifier`
 
-    @Option(
-        names = ["--ignore-member-order"],
-        description = [
-            "Ignore class member declaration order when",
-            "comparing class files."
-        ]
-    )
-    var ignoreMemberOrder = false
+    @ArgGroup(exclusive = false, multiplicity = "0..1")
+    var classTextOptionsGroup: ClassTextOptionsGroup? = null
+
+    class ClassTextOptionsGroup {
+        private var memberOrder = ClassMemberOrder.Declaration
+
+        @Option(
+            names = ["--ignore-member-order"],
+            description = [
+                "Ignore class member declaration order when",
+                "comparing class files."
+            ]
+        )
+        fun setIgnoreMemberOrder(value: Boolean) {
+            if (value) {
+                memberOrder = ClassMemberOrder.Sorted
+            }
+        }
+
+        fun toClassTextOptions(): ClassTextOptions {
+            return ClassTextOptions(memberOrder = memberOrder)
+        }
+    }
+
 
     @Option(
         names = ["-v"],
@@ -225,13 +241,7 @@ class JardiffMain : Callable<Int> {
             includes = includes.filterNot { it.isBlank() }.toSet(),
             excludes = excludes.filterNot { it.isBlank() }.toSet(),
             coalesceClassFileWithExtensions = coalesceClassFileWithExtensions,
-            classTextOptions = ClassTextOptions(
-                memberOrder = if (ignoreMemberOrder) {
-                    ClassMemberOrder.Sorted
-                } else {
-                    ClassMemberOrder.Declaration
-                }
-            )
+            classTextOptions = classTextOptionsGroup?.toClassTextOptions() ?: ClassTextOptions()
         ).use {
             it.diff()
         }

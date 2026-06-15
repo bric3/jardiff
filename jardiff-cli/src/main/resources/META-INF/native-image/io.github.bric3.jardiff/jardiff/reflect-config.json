@@ -6,13 +6,25 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "io.github.bric3.jardiff.app.Main$FromManifestVersionProvider",
+    "name": "io.github.bric3.jardiff.app.JardiffMain",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true
   },
   {
-    "name": "io.github.bric3.jardiff.app.Main$OutputModeGroup",
+    "name": "io.github.bric3.jardiff.app.JardiffMain$FromManifestVersionProvider",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.bric3.jardiff.app.JardiffMain$OutputModeGroup",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.bric3.jardiff.app.JardiffMain$ClassTextOptionsGroup",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true
