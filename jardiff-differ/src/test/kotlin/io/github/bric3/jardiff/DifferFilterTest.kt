@@ -39,7 +39,8 @@ class DifferFilterTest {
 
             assertThat(output).doesNotContain("test.properties")
                 .doesNotContain("META-INF/MANIFEST.MF")
-                .contains("io/github/bric3/jardiff/FooFixtureClass.class")
+                .doesNotContain("io/github/bric3/jardiff/FooFixtureClass.class")
+                .contains("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
         }
 
         @Test
@@ -54,10 +55,7 @@ class DifferFilterTest {
             )
 
             assertThat(output).describedAs("META-INF directory should be excluded")
-                .doesNotContain("META-INF/MANIFEST.MF")
-                .doesNotContain("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
-                .doesNotContain("META-INF")
-                .contains("io/github/bric3/jardiff/FooFixtureClass.class")
+                .isEmpty()
         }
 
         @Test
@@ -72,9 +70,7 @@ class DifferFilterTest {
             )
 
             assertThat(output).describedAs("nested files matching pattern should be excluded")
-                .doesNotContain("META-INF/MANIFEST.MF")
-                .doesNotContain("jardiff-differ_testFixtures.kotlin_module")
-                .contains("io/github/bric3/jardiff/FooFixtureClass.class")
+                .isEmpty()
         }
 
         @Test
@@ -92,7 +88,7 @@ class DifferFilterTest {
                 .doesNotContain(".properties")
                 .doesNotContain(".md")
                 .doesNotContain("META-INF/")
-                .contains("io/github/bric3/jardiff/FooFixtureClass.class")
+                .doesNotContain("io/github/bric3/jardiff/FooFixtureClass.class")
         }
 
         @Test
@@ -111,9 +107,7 @@ class DifferFilterTest {
             )
 
             assertThat(output).describedAs("Ignored").isEqualTo(
-                """
-                ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
-                """.trimIndent()
+                ""
             )
         }
 
@@ -180,7 +174,7 @@ class DifferFilterTest {
 
             assertThat(output).contains("META-INF/MANIFEST.MF")
                 .contains("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
-                .contains("io/github/bric3/jardiff/FooFixtureClass.class")
+                .doesNotContain("io/github/bric3/jardiff/FooFixtureClass.class")
         }
 
         @Test
@@ -213,9 +207,7 @@ class DifferFilterTest {
                 includes = setOf("**/*.class")
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .doesNotContain("META-INF/MANIFEST.MF")
-                .doesNotContain("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
+            assertThat(output).isEmpty()
         }
 
         @Test
@@ -245,8 +237,8 @@ class DifferFilterTest {
                 includes = setOf("**/*.class", "**/MANIFEST.MF")
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .contains("META-INF/MANIFEST.MF")
+            assertThat(output).contains("META-INF/MANIFEST.MF")
+                .doesNotContain("io/github/bric3/jardiff/FooFixtureClass.class")
                 .doesNotContain("jardiff-differ_testFixtures.kotlin_module")
         }
 
@@ -261,9 +253,7 @@ class DifferFilterTest {
                 includes = setOf("**/github/**/*Fixture*.class")
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .doesNotContain("META-INF/MANIFEST.MF")
-                .doesNotContain("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
+            assertThat(output).isEmpty()
         }
 
         @Test
@@ -277,8 +267,7 @@ class DifferFilterTest {
                 includes = setOf("*.class")
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .doesNotContain("META-INF/MANIFEST.MF")
+            assertThat(output).isEmpty()
         }
 
         @Test
@@ -306,9 +295,9 @@ class DifferFilterTest {
                 includes = emptySet()
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .contains("META-INF/MANIFEST.MF")
+            assertThat(output).contains("META-INF/MANIFEST.MF")
                 .contains("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
+                .doesNotContain("io/github/bric3/jardiff/FooFixtureClass.class")
         }
     }
 
@@ -427,9 +416,7 @@ class DifferFilterTest {
                 excludes = setOf("META-INF/**")
             )
 
-            assertThat(output).contains("io/github/bric3/jardiff/FooFixtureClass.class")
-                .doesNotContain("META-INF/MANIFEST.MF")
-                .doesNotContain("META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module")
+            assertThat(output).isEmpty()
         }
     }
 

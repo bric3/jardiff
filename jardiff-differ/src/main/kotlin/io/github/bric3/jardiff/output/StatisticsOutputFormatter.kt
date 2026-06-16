@@ -25,8 +25,11 @@ class StatisticsOutputFormatter : OutputFormatter() {
     private val fileStats = mutableListOf<FileStat>()
 
     override fun onFileProcessed(logger: Logger, data: FileComparisonData) {
-        // Collect statistics for all files, output at the end
         val (additions, deletions) = countChanges(data.unifiedDiff)
+        if (additions + deletions == 0) {
+            return
+        }
+
         fileStats.add(FileStat(data.path, additions, deletions))
     }
 
@@ -65,11 +68,6 @@ class StatisticsOutputFormatter : OutputFormatter() {
 
         fileStats.forEach { stat ->
             val totalChanges = stat.additions + stat.deletions
-            if (totalChanges == 0) {
-                // File exists on both sides but no changes
-                logger.stdout(" ${stat.path.padEnd(maxPathLength)} | 0")
-                return@forEach
-            }
 
             // Calculate bar width proportional to changes
             val barWidth = if (maxChanges > maxBarWidth) {
@@ -86,7 +84,7 @@ class StatisticsOutputFormatter : OutputFormatter() {
         }
 
         // Summary line
-        val totalFiles = fileStats.count { it.additions + it.deletions > 0 }
+        val totalFiles = fileStats.size
         val totalAdditions = fileStats.sumOf { it.additions }
         val totalDeletions = fileStats.sumOf { it.deletions }
 

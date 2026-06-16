@@ -38,7 +38,7 @@ class StatisticsOutputFormatterTest {
     }
 
     @Test
-    fun `should show file with no changes as 0`() {
+    fun `should not show file with no changes`() {
         val formatter = StatisticsOutputFormatter()
         val output = StringWriter()
         val logger = Logger(output, StringWriter(), booleanArrayOf())
@@ -50,9 +50,7 @@ class StatisticsOutputFormatterTest {
 
         formatter.onComplete(logger)
 
-        val result = output.toString()
-        assertThat(result).contains(" unchanged.txt")
-        assertThat(result).contains("| 0")
+        assertThat(output.toString()).isEmpty()
     }
 
     @Test
@@ -177,7 +175,7 @@ class StatisticsOutputFormatterTest {
     }
 
     @Test
-    fun `should only count files with changes in summary`() {
+    fun `should only show and count files with changes`() {
         val formatter = StatisticsOutputFormatter()
         val output = StringWriter()
         val logger = Logger(output, StringWriter(), booleanArrayOf())
@@ -194,7 +192,7 @@ class StatisticsOutputFormatterTest {
         formatter.onComplete(logger)
 
         val result = output.toString()
-        // Only 1 file changed (the one with actual changes)
+        assertThat(result).doesNotContain("unchanged.txt")
         assertThat(result).contains("1 files changed")
     }
 }

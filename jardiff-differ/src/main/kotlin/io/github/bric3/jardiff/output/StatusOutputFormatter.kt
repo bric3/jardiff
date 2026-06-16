@@ -13,13 +13,12 @@ package io.github.bric3.jardiff.output
 import io.github.bric3.jardiff.Logger
 
 /**
- * Status output formatter that shows a two-column XY status for each file.
+ * Status output formatter that shows a two-column XY status for changed files.
  *
  * Similar to `git status --short`:
  * - "D " - File deleted from/missing on left (exists on right only)
  * - " D" - File deleted from/missing on right (exists on left only)
  * - "M " - File modified (exists on both sides with changes)
- * - "  " - File unchanged (exists on both sides without changes)
  */
 class StatusOutputFormatter : OutputFormatter() {
     override fun onFileProcessed(logger: Logger, data: FileComparisonData) {
@@ -27,7 +26,7 @@ class StatusOutputFormatter : OutputFormatter() {
             !data.leftExists && data.rightExists -> "${logger.red("D ")} ${data.path}"
             data.leftExists && !data.rightExists -> "${logger.red(" D")} ${data.path}"
             data.changed -> "${logger.red("M ")} ${data.path}"
-            else -> "${logger.green("  ")} ${data.path}"
+            else -> return
         }
         logger.stdout(status)
     }

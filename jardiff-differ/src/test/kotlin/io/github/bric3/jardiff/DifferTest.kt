@@ -39,12 +39,7 @@ class DifferTest {
 
         val output = diff(status, singleClassJar, singleClassJar)
 
-        assertThat(output).isEqualTo(
-            """
-            ${green("  ")} META-INF/MANIFEST.MF
-            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
-            """.trimIndent()
-        )
+        assertThat(output).isEmpty()
     }
 
     @Test
@@ -74,7 +69,6 @@ class DifferTest {
             """
             ${red("D ")} META-INF/MANIFEST.MF
             ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
-            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
     }
@@ -126,7 +120,6 @@ class DifferTest {
             """
             ${red("D ")} META-INF/MANIFEST.MF
             ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
-            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             """.trimIndent()
         )
     }
@@ -138,7 +131,7 @@ class DifferTest {
         val output = diff(status, leftDirectory, rightDirectory)
 
         assertThat(output).describedAs("status should not report byte-only class differences")
-            .isEqualTo("${green("  ")} ${FooFixtureClass::class.path}")
+            .isEmpty()
     }
 
     @Test
@@ -154,7 +147,6 @@ class DifferTest {
     @Test
     fun `should ignore class member order for multiple classes in all output modes when enabled`() {
         val fixturePaths = listOf(FooFixtureClass::class.path, MemberOrderFixture::class.path).sorted()
-        val maxPathLength = fixturePaths.maxOf { it.length }
         val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(
             tempDir,
             FooFixtureClass::class,
@@ -173,20 +165,9 @@ class DifferTest {
         assertThat(diff(diff, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
             .isEmpty()
         assertThat(diff(status, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
-            .isEqualTo(
-                fixturePaths.joinToString("\n") {
-                    "${green("  ")} $it"
-                }
-            )
+            .isEmpty()
         assertThat(diff(stat, leftDirectory, rightDirectory, classTextOptions = sortedOptions))
-            .isEqualTo(
-                fixturePaths.joinToString(
-                    separator = "\n",
-                    postfix = "\n 0 files changed, 0 insertions(+), 0 deletions(-)"
-                ) {
-                    " ${it.padEnd(maxPathLength)} | 0"
-                }
-            )
+            .isEmpty()
     }
 
     @Test
@@ -222,6 +203,32 @@ class DifferTest {
     }
 
     @Test
+    fun `stat should not show unchanged coalesced classes`() {
+        val singleClassJar = createJarFromResources(
+            tempDir,
+            FooFixtureClass::class.java.classLoader,
+            { it.replace(".class", ".classdata") },
+            FooFixtureClass::class.path
+        )
+
+        val output = diff(
+            outputMode = stat,
+            left = fixtureClassesOutput,
+            right = singleClassJar,
+            excludes = fixtureDirectoryExcludes,
+            coalesceClassFileWithExts = setOf("classdata")
+        )
+
+        assertThat(output).isEqualTo(
+            """
+            | META-INF/MANIFEST.MF                                                       | 3 ${green("+++")}${red("")}
+            | META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module | 1 ${green("")}${red("-")}
+            | 2 files changed, 3 insertions(+), 1 deletions(-)
+            """.trimMargin() // seems like trimIndent() eats the leading space if each has one.
+        )
+    }
+
+    @Test
     fun `should show differences when coalescing disabled due to multiple class files using simple mode`() {
         val seenOnce = mutableSetOf<String>()
         val singleClassJar = createJarFromResources(
@@ -250,7 +257,6 @@ class DifferTest {
             """
             ${red("M ")} META-INF/MANIFEST.MF
             ${red(" D")} META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module
-            ${green("  ")} io/github/bric3/jardiff/FooFixtureClass.class
             ${red("D ")} io/github/bric3/jardiff/FooFixtureClass.classdata
             """.trimIndent()
         )
@@ -350,7 +356,6 @@ class DifferTest {
             """
             | META-INF/MANIFEST.MF                                                       | 3 ${green("+++")}${red("")}
             | META-INF/io.github.bric3.jardiff_jardiff-differ_testFixtures.kotlin_module | 1 ${green("")}${red("-")}
-            | io/github/bric3/jardiff/FooFixtureClass.class                              | 0
             | 2 files changed, 3 insertions(+), 1 deletions(-)
             """.trimMargin() // seems like trimIndent() eats the leading space if each has one.
         )

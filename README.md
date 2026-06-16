@@ -66,23 +66,21 @@ Example output in default mode:
      ANEWARRAY java/lang/String
 ```
 
-Or with the `--stat` mode
+Or with the `--status` mode
 
 ```
 D  foo/bar/qux/Zuul.class
  D foo/bar/qux/Zig.class
 M  foo/bar/qux/Baz.class
-   foo/bar/qux/Zorg.class
 ```
 
-Or with the `--status` mode
+Or with the `--stat` mode
 
 ```
  foo/bar/qux/Zuul.class | 42 ++++++++++++++++++++++++++++++++----------
  foo/bar/qux/Zig.class  |  1 -
  foo/bar/qux/Baz.class  | 34 ++++++++++++++++++++++------------
- foo/bar/qux/Zorg.class |  0 
- 4 files changed, 54 insertions(+), 23 deletions(-)
+ 3 files changed, 54 insertions(+), 23 deletions(-)
 ```
 
 When output piped to [delta](https://github.com/dandavison/delta), it looks like this:
@@ -165,7 +163,7 @@ Compares two JAR files or directories and reports differences.
                        Displays file-by-file statistics with
                          additions/deletions.
       --status         Show short status output (like 'git status --short').
-                       Displays two-column XY status for each file.
+                       Displays two-column XY status for changed files.
   -v                   Specify multiple -v options to increase verbosity.
                        For example, '-v -v' or '-vv'.
   -V, --version        Print version information and exit.

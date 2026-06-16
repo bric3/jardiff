@@ -1,3 +1,6 @@
+import com.javiersc.gradle.version.GradleVersion
+import com.javiersc.semver.project.gradle.plugin.VersionMapper
+
 /*
  * jardiff
  *
@@ -19,15 +22,24 @@ plugins {
     id("com.javiersc.semver") version "0.9.0"
 }
 
-semver {
-    // Workaround to avoid having commit count and metadata in the version on the tagged commit
-    mapVersion { gradleVersion ->
+class JardiffVersionMapper(private val shortHeadHash: String) : VersionMapper {
+    override fun map(gradleVersion: GradleVersion): String =
         if (gradleVersion.commits == 0 && gradleVersion.metadata.isNullOrBlank()) {
             "${gradleVersion.major}.${gradleVersion.minor}.${gradleVersion.patch}"
+        } else if (gradleVersion.hash == null && gradleVersion.metadata == "DIRTY") {
+            gradleVersion.copy(hash = shortHeadHash, metadata = "DIRTY").toString()
         } else {
             gradleVersion.toString()
         }
-    }
+}
+
+val shortHeadHash = providers.exec {
+    commandLine("git", "-C", rootDir.absolutePath, "rev-parse", "--short=7", "HEAD")
+}.standardOutput.asText.get().trim()
+
+semver {
+    // Workaround to avoid having commit count and metadata in the version on the tagged commit
+    mapVersion(JardiffVersionMapper(shortHeadHash))
 }
 
 dependencyResolutionManagement {
