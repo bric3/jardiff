@@ -12,9 +12,9 @@ Jardiff is a command-line tool for comparing the contents of JAR files and direc
 > 
 > While [lightbend-labs/jardiff](https://github.com/lightbend-labs/jardiff) and this tool share the same name and similar goals, they have different features:
 > 
-> The **lightbend-labs/jardiff** focuses on Scala projects, and it has a some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
+> The **lightbend-labs/jardiff** focuses on Scala projects, and it has some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
 > 
-> While this **bric3/jardiff** tool offers a more versatile tool to inspect class differences
+> However, **bric3/jardiff** offers a more versatile tooling to inspect class differences
 > * Additional to the usual diff output, it provides statistics (`--stat`) and status (`--status`)
 >   modes similar to git diff/status
 > * Supports class extension coalescing, in case classes are renamed to other extensions like `.bin`, `.clazz`, etc.
@@ -81,6 +81,13 @@ Or with the `--stat` mode
  foo/bar/qux/Zig.class  |  1 -
  foo/bar/qux/Baz.class  | 34 ++++++++++++++++++++++------------
  3 files changed, 54 insertions(+), 23 deletions(-)
+```
+
+With class extension coalescing, paths with different left and right extensions use a Git-style
+brace form:
+
+```
+M  foo/bar/qux/Baz{.class => .classdata}
 ```
 
 When output piped to [delta](https://github.com/dandavison/delta), it looks like this:

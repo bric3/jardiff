@@ -133,7 +133,7 @@ class Differ @JvmOverloads constructor(
         )
 
         return FileComparisonData(
-            path = entry.path,
+            path = entry.displayPath,
             leftExists = entry.left != null,
             rightExists = entry.right != null,
             unifiedDiff = unifiedDiff
@@ -142,7 +142,7 @@ class Differ @JvmOverloads constructor(
 
     private fun unchangedComparisonData(entry: FileEntryToDiff): FileComparisonData {
         return FileComparisonData(
-            path = entry.path,
+            path = entry.displayPath,
             leftExists = entry.left != null,
             rightExists = entry.right != null,
             unifiedDiff = emptyList()
@@ -151,7 +151,7 @@ class Differ @JvmOverloads constructor(
 
     private fun statusComparisonData(entry: FileEntryToDiff, changed: Boolean): FileComparisonData {
         return FileComparisonData(
-            path = entry.path,
+            path = entry.displayPath,
             leftExists = entry.left != null,
             rightExists = entry.right != null,
             unifiedDiff = emptyList(),
@@ -235,11 +235,13 @@ class Differ @JvmOverloads constructor(
                                 // entry can be coalesced, but only if it wasn't already added
                                 if (coalescedEntries.add(entry)) {
                                     logger.verbose2("Coalesced entry $originalPath")
+                                    val leftClass = leftClasses.singleOrNull()
+                                    val rightClass = rightClasses.singleOrNull()
                                     add(
                                         FileEntryToDiff(
-                                            ResourcePath.of(entry.parentPath, "${entry.classFileName}.class").toString(),
-                                            leftClasses.singleOrNull(),
-                                            rightClasses.singleOrNull(),
+                                            coalescedDisplayPath(entry, leftClass, rightClass),
+                                            leftClass,
+                                            rightClass,
                                         )
                                     )
                                 }
@@ -267,6 +269,26 @@ class Differ @JvmOverloads constructor(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    private fun coalescedDisplayPath(
+        entry: CoalescedClassEntry,
+        left: FileAccess?,
+        right: FileAccess?
+    ): String {
+        val leftPath = left?.relativePath
+        val rightPath = right?.relativePath
+
+        return when {
+            leftPath == null && rightPath == null -> error("Coalesced entry $entry has no files")
+            leftPath == null -> rightPath.toString()
+            rightPath == null -> leftPath.toString()
+            leftPath.extension == rightPath.extension -> leftPath.toString()
+            else -> {
+                val basePath = ResourcePath.of(entry.parentPath, entry.classFileName)
+                "$basePath{.${leftPath.extension} => .${rightPath.extension}}"
             }
         }
     }
@@ -368,7 +390,7 @@ class Differ @JvmOverloads constructor(
     ) : FileEntry()
 
     data class FileEntryToDiff(
-        val path: String,
+        val displayPath: String,
         val left: FileAccess?,
         val right: FileAccess?,
     )

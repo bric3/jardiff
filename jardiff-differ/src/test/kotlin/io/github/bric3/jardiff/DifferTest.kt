@@ -20,6 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.StringWriter
+import java.nio.file.Files
 import java.nio.file.Path
 
 class DifferTest {
@@ -229,6 +230,28 @@ class DifferTest {
     }
 
     @Test
+    fun `status and stat should show coalesced class extension mismatch in display path`() {
+        val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(tempDir, FooFixtureClass::class)
+        moveFixtureClassToClassdata(rightDirectory)
+        val displayPath = "${FooFixtureClass::class.path.removeSuffix(".class")}{.class => .classdata}"
+
+        assertThat(diff(status, leftDirectory, rightDirectory, coalesceClassFileWithExts = setOf("classdata")))
+            .isEqualTo("${red("M ")} $displayPath")
+        assertThat(diff(stat, leftDirectory, rightDirectory, coalesceClassFileWithExts = setOf("classdata")))
+            .contains(" $displayPath ")
+    }
+
+    @Test
+    fun `status should keep classdata extension when both coalesced class files use classdata`() {
+        val (leftDirectory, rightDirectory) = createMemberReorderedClassDirectories(tempDir, FooFixtureClass::class)
+        moveFixtureClassToClassdata(leftDirectory)
+        moveFixtureClassToClassdata(rightDirectory)
+
+        assertThat(diff(status, leftDirectory, rightDirectory, coalesceClassFileWithExts = setOf("classdata")))
+            .isEqualTo("${red("M ")} ${FooFixtureClass::class.path.replace(".class", ".classdata")}")
+    }
+
+    @Test
     fun `should show differences when coalescing disabled due to multiple class files using simple mode`() {
         val seenOnce = mutableSetOf<String>()
         val singleClassJar = createJarFromResources(
@@ -423,6 +446,12 @@ class DifferTest {
             classTextOptions = classTextOptions,
         ).use { it.diff() }
         return output.toString().trimEnd()
+    }
+
+    private fun moveFixtureClassToClassdata(directory: Path) {
+        val classPath = Path.of(FooFixtureClass::class.path)
+        val classDataPath = classPath.resolveSibling("${classPath.fileName.toString().removeSuffix(".class")}.classdata")
+        Files.move(directory.resolve(classPath), directory.resolve(classDataPath))
     }
 
     private fun verbosity(level: Int) = BooleanArray(level)
