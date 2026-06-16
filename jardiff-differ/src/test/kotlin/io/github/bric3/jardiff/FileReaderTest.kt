@@ -53,6 +53,20 @@ class FileReaderTest {
     }
 
     @Test
+    fun `should textify class from magic header without class extension`(@TempDir tempDir: Path) {
+        val classFile = Path.of("FooFixtureClass.bin")
+        Files.write(
+            tempDir.resolve(classFile),
+            FooFixtureClass::class.bytes ?: error("Could not load fixture class bytes")
+        )
+
+        val fileAccess = FileAccess.FromDirectory(tempDir, classFile)
+        val textifiedClass = FileReader.readFileAsTextIfPossible(fileAccess, classTextifier)
+
+        assertThat(textifiedClass).containsExactly(*fooFixtureClassLines)
+    }
+
+    @Test
     fun `should return a hash of binary files`(@TempDir tempDir: Path) {
         val binaryFile = Path.of("file.bin")
         Files.write(

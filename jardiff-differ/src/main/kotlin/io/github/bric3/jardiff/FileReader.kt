@@ -20,6 +20,12 @@ import java.security.MessageDigest
 
 object FileReader {
     private const val CHARSET_CONFIDENCE_THRESHOLD = 40
+    private val CLASS_FILE_MAGIC = byteArrayOf(
+        0xCA.toByte(),
+        0xFE.toByte(),
+        0xBA.toByte(),
+        0xBE.toByte()
+    )
 
     @JvmOverloads
     fun readFileAsTextIfPossible(
@@ -39,8 +45,10 @@ object FileReader {
         // * is other binary file? then limit to checksum
         fileAccess.openBufferedInputStream().use {
             return runCatching {
-                when (fileAccess.relativePath.extension) {
-                    in classExtensions -> Result.success(classTextifier.toLines(it))
+                when {
+                    fileAccess.relativePath.extension in classExtensions || it.hasClassFileMagic() ->
+                        Result.success(classTextifier.toLines(it))
+
                     else -> {
                         // Mark the stream so we can reset if needed
                         it.mark(Int.MAX_VALUE)
@@ -56,7 +64,7 @@ object FileReader {
 
                         if (match.confidence >= CHARSET_CONFIDENCE_THRESHOLD) {
                             Result.success(it.reader(Charset.forName(match.name)).readLines())
-                        } else if(match.confidence < CHARSET_CONFIDENCE_THRESHOLD && encodingHint != null) {
+                        } else if (match.confidence < CHARSET_CONFIDENCE_THRESHOLD && encodingHint != null) {
                             Logger.debugLog("Charset detection below $CHARSET_CONFIDENCE_THRESHOLD trying $encodingHint")
                             Result.success(it.reader(Charset.forName(encodingHint)).readLines())
                         } else {
@@ -70,6 +78,14 @@ object FileReader {
                 fileAccess.openBufferedInputStream().use(::produceHash)
             }.getOrDefault(emptyList())
         }
+    }
+
+    private fun BufferedInputStream.hasClassFileMagic(): Boolean {
+        mark(CLASS_FILE_MAGIC.size)
+        val header = readNBytes(CLASS_FILE_MAGIC.size)
+        reset()
+
+        return header.contentEquals(CLASS_FILE_MAGIC)
     }
 
     private fun encodingHint(relativePath: ResourcePath): String? {

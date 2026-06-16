@@ -102,6 +102,7 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 * Compare JARs and directories recursively
 * Line-based diffs for each files
 * Class file comparison using different strategy to produce text
+   * Auto-detects class files from their bytecode header, even without a `.class` extension
    * ASM's Textify (_default_)
    * Class outline (version, is kotlin/groovy class, synthetic or bridge members)
    * Class File Version only
@@ -143,9 +144,9 @@ Compares two JAR files or directories and reports differences.
                        Coalesce class files with the given extensions, in
                        addition to the usual 'class', i.e. makes classes
                        named 'Foo.class' and 'Foo.bin' aliased to the same
-                       file same entry. Also this enables the file to be
-                       compared on bytecode level Takes a comma separated
-                       list, e.g. 'classdata' or 'raw,bin,clazz'.
+                       file entry. Class files are auto-detected from their
+                       bytecode header. Takes a comma separated list, e.g.
+                       'classdata' or 'raw,bin,clazz'.
       --class-text-producer=<tool>
                        Tool used to produce class text, possible values:
                        asm-textifier, class-file-version, class-outline

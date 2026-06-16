@@ -121,9 +121,9 @@ class JardiffMain : Callable<Int> {
             "Coalesce class files with the given extensions, in",
             "addition to the usual 'class', i.e. makes classes",
             "named 'Foo.class' and 'Foo.bin' aliased to the same",
-            "file same entry. Also this enables the file to be",
-            "compared on bytecode level Takes a comma separated",
-            "list, e.g. 'classdata' or 'raw,bin,clazz'."
+            "file entry. Class files are auto-detected from their",
+            "bytecode header. Takes a comma separated list, e.g.",
+            "'classdata' or 'raw,bin,clazz'."
         ],
         split = ","
     )
