@@ -1,6 +1,3 @@
-
-import de.undercouch.gradle.tasks.download.Download
-
 /*
  * jardiff
  *
@@ -10,6 +7,8 @@ import de.undercouch.gradle.tasks.download.Download
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+import de.undercouch.gradle.tasks.download.Download
 
 plugins {
     id("de.undercouch.download") version "5.7.0"
@@ -110,7 +109,11 @@ testing {
                         inputs.dir(openJdkJcodDir)
                             .withPropertyName("openJdkJcodDir")
                             .withPathSensitivity(PathSensitivity.RELATIVE)
+                        inputs.dir(asmtoolsSourceDir)
+                            .withPropertyName("asmtoolsSourceDir")
+                            .withPathSensitivity(PathSensitivity.RELATIVE)
                         systemProperty("jardiff.asmtools.jar", asmtoolsJar.get().asFile.absolutePath)
+                        systemProperty("jardiff.asmtools.jcod.dir", asmtoolsSourceDir.get().asFile.absolutePath)
                         systemProperty("jardiff.openjdk.jcod.dir", openJdkJcodDir.get().asFile.absolutePath)
                     }
                 }

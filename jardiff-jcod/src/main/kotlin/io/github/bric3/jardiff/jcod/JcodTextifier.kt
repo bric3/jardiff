@@ -231,7 +231,7 @@ private data class JcodClassFile(
         val attributeName = utf8(attribute.nameIndex)
         appendLine("$indent${attribute.header(attributeName)}")
 
-        if (attribute.declaredLength != attribute.info.size ||
+        if ((attribute.declaredLength != attribute.info.size && attributeName != "Code") ||
             !appendStructuredAttribute(attributeName, attribute.info, "$indent  ")
         ) {
             appendRawAttributeBytes(attribute.info, "$indent  ")
@@ -243,7 +243,7 @@ private data class JcodClassFile(
     private fun StringBuilder.appendStructuredAttribute(attributeName: String?, info: ByteArray, indent: String): Boolean {
         return when (attributeName) {
             "Code" -> appendCodeAttribute(info, indent)
-            "ConstantValue",
+            "ConstantValue" -> appendConstantValueAttribute(info, indent)
             "ModuleMainClass",
             "NestHost",
             "Signature",
@@ -271,15 +271,28 @@ private data class JcodClassFile(
     private fun StringBuilder.appendCode(code: CodeInfo, indent: String) {
         appendLine("$indent${code.maxStack}; // max_stack")
         appendLine("$indent${code.maxLocals}; // max_locals")
-        appendLine("${indent}Bytes[${code.bytecode.size}]{")
+        appendLine("${indent}Bytes[${code.declaredBytecodeLength}]{")
         appendRawBytes(code.bytecode, "$indent  ")
         appendLine("$indent}")
+        if (!code.hasTrapAndAttributeTables) {
+            return
+        }
         appendLine("$indent[${code.traps.size}] { // Traps")
         code.traps.forEach { trap ->
             appendLine("$indent  ${trap.startPc} ${trap.endPc} ${trap.handlerPc} ${trap.catchType};")
         }
         appendLine("$indent} // end Traps")
         appendAttributes(code.attributes, "Attributes", indent)
+    }
+
+    private fun StringBuilder.appendConstantValueAttribute(info: ByteArray, indent: String): Boolean {
+        if (info.size != U2_BYTES) {
+            return false
+        }
+
+        val constantValueIndex = Cursor(info).readUnsignedShort()
+        appendLine("$indent#$constantValueIndex;")
+        return true
     }
 
     private fun StringBuilder.appendSingleIndexAttribute(info: ByteArray, indent: String): Boolean {
@@ -480,7 +493,9 @@ private data class MemberInfo(
 private data class CodeInfo(
     val maxStack: Int,
     val maxLocals: Int,
+    val declaredBytecodeLength: Int,
     val bytecode: ByteArray,
+    val hasTrapAndAttributeTables: Boolean,
     val traps: List<TrapInfo>,
     val attributes: List<AttributeInfo>
 ) {
@@ -492,6 +507,17 @@ private data class CodeInfo(
                 val maxLocals = cursor.readUnsignedShort()
                 val codeLength = cursor.readInt()
                 require(codeLength >= 0) { "Negative Code bytecode length: $codeLength" }
+                if (cursor.remainingByteCount < codeLength) {
+                    return CodeInfo(
+                        maxStack = maxStack,
+                        maxLocals = maxLocals,
+                        declaredBytecodeLength = codeLength,
+                        bytecode = cursor.readRemainingBytes(),
+                        hasTrapAndAttributeTables = false,
+                        traps = emptyList(),
+                        attributes = emptyList()
+                    )
+                }
                 val bytecode = cursor.readBytes(codeLength)
                 val traps = List(cursor.readUnsignedShort()) {
                     TrapInfo(
@@ -503,7 +529,7 @@ private data class CodeInfo(
                 }
                 val attributes = cursor.readAttributes(constantPool)
                 require(cursor.isAtEnd) { "Unexpected trailing bytes in Code attribute" }
-                CodeInfo(maxStack, maxLocals, bytecode, traps, attributes)
+                CodeInfo(maxStack, maxLocals, codeLength, bytecode, true, traps, attributes)
             }.getOrNull()
         }
     }
@@ -512,7 +538,9 @@ private data class CodeInfo(
         return this === other || other is CodeInfo &&
             maxStack == other.maxStack &&
             maxLocals == other.maxLocals &&
+            declaredBytecodeLength == other.declaredBytecodeLength &&
             bytecode.contentEquals(other.bytecode) &&
+            hasTrapAndAttributeTables == other.hasTrapAndAttributeTables &&
             traps == other.traps &&
             attributes == other.attributes
     }
@@ -520,7 +548,9 @@ private data class CodeInfo(
     override fun hashCode(): Int {
         var result = maxStack
         result = 31 * result + maxLocals
+        result = 31 * result + declaredBytecodeLength
         result = 31 * result + bytecode.contentHashCode()
+        result = 31 * result + hasTrapAndAttributeTables.hashCode()
         result = 31 * result + traps.hashCode()
         result = 31 * result + attributes.hashCode()
         return result
@@ -799,8 +829,12 @@ private fun StringBuilder.appendRawAttributeBytes(bytes: ByteArray, indent: Stri
         append(indent)
         append(
             chunk.chunked(4).joinToString(" ") { literalBytes ->
-                "0x" + literalBytes.joinToString("") { byte ->
-                    (byte.toInt() and 0xff).toString(16).uppercase().padStart(2, '0')
+                if (literalBytes.size < 4) {
+                    literalBytes.joinToString(" ") { byte -> (byte.toInt() and 0xff).toHex(2) }
+                } else {
+                    "0x" + literalBytes.joinToString("") { byte ->
+                        (byte.toInt() and 0xff).toString(16).uppercase().padStart(2, '0')
+                    }
                 }
             }
         )

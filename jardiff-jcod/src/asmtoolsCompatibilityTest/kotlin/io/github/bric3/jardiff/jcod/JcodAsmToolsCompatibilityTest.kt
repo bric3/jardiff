@@ -11,9 +11,9 @@
 package io.github.bric3.jardiff.jcod
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.Named.named
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -50,7 +50,8 @@ class JcodAsmToolsCompatibilityTest {
 
     @ParameterizedTest
     @MethodSource("openJdkJcodFiles")
-    fun `OpenJDK classes decompile like AsmTools jdec`(
+    @MethodSource("asmToolsJcodFiles")
+    fun `JCod corpus classes decompile like AsmTools jdec`(
         jcodFile: Path,
         @TempDir tempDir: Path
     ) {
@@ -463,12 +464,30 @@ class JcodAsmToolsCompatibilityTest {
 
         @JvmStatic
         fun openJdkJcodFiles(): Stream<Named<Path>> {
-            val root = Path.of(System.getProperty("jardiff.openjdk.jcod.dir"))
+            val openJdkRoot = Path.of(System.getProperty("jardiff.openjdk.jcod.dir"))
+            return jcodFilesUnder(openJdkRoot, "openjdk") {
+                openJdkJcodDisplayName(openJdkRoot, it)
+            }
+        }
+
+        @JvmStatic
+        fun asmToolsJcodFiles(): Stream<Named<Path>> {
+            val asmToolsRoot = Path.of(System.getProperty("jardiff.asmtools.jcod.dir"))
+            return jcodFilesUnder(asmToolsRoot, "asmtools") {
+                asmToolsRoot.relativize(it).toString()
+            }
+        }
+
+        private fun jcodFilesUnder(
+            root: Path,
+            corpusName: String,
+            displayName: (Path) -> String
+        ): Stream<Named<Path>> {
             return Files.walk(root).use { stream ->
                 stream
                     .filter { it.extension == "jcod" }
                     .sorted()
-                    .map { named(openJdkJcodDisplayName(root, it), it) }
+                    .map { named("$corpusName:${displayName(it)}", it) }
                     .toList()
                     .stream()
             }
