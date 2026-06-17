@@ -25,6 +25,9 @@ val asmtoolsExtractDir = layout.buildDirectory.dir("asmtools/source")
 val asmtoolsSourceDir = asmtoolsExtractDir.map { it.dir("asmtools-$asmtoolsCommit") }
 val asmtoolsAntBuildDir = layout.buildDirectory.dir("asmtools/build")
 val asmtoolsJar = layout.buildDirectory.file("asmtools/asmtools.jar")
+val openJdkJcodCommit = "e634995278df705be979c3d67b78a4319e32bfcc"
+val openJdkJcodArchive = layout.buildDirectory.file("openjdk-jcod/jdk26u-$openJdkJcodCommit.tar.gz")
+val openJdkJcodDir = layout.buildDirectory.dir("openjdk-jcod/source")
 
 tasks {
     jar {
@@ -53,6 +56,26 @@ tasks {
         notCompatibleWithConfigurationCache("Extracts an external source archive for an opt-in compatibility test.")
     }
 
+    val downloadOpenJdkJcodArchive by registering(Download::class) {
+        description = "Download the pinned OpenJDK JDK 26 update archive for JCod compatibility testing."
+        src("https://github.com/openjdk/jdk26u/archive/$openJdkJcodCommit.tar.gz")
+        dest(openJdkJcodArchive)
+        onlyIfModified(true)
+        overwrite(false)
+        tempAndMove(true)
+    }
+
+    val extractOpenJdkJcodFiles by registering(Copy::class) {
+        description = "Extract OpenJDK JCod test files used by compatibility tests."
+        dependsOn(downloadOpenJdkJcodArchive)
+        from(tarTree(resources.gzip(downloadOpenJdkJcodArchive.map { it.dest  }))) {
+            include("jdk26u-$openJdkJcodCommit/test/**/*.jcod")
+        }
+        into(openJdkJcodDir)
+        includeEmptyDirs = false
+        notCompatibleWithConfigurationCache("Extracts an external source archive for an opt-in compatibility test.")
+    }
+
     val buildAsmToolsJar by registering(BuildAsmToolsJar::class) {
         description = "Build the external OpenJDK AsmTools jar used by compatibility tests."
         dependsOn(extractAsmToolsArchive)
@@ -71,6 +94,7 @@ testing {
             dependencies {
                 implementation(project())
                 implementation(libs.assertj.core)
+                implementation(libs.junit.jupiter.params)
             }
 
             targets {
@@ -79,10 +103,15 @@ testing {
                         description = "Verifies emitted JCod with external OpenJDK AsmTools."
                         shouldRunAfter(tasks.test)
                         dependsOn(tasks.named("buildAsmToolsJar"))
+                        dependsOn(tasks.named("extractOpenJdkJcodFiles"))
                         inputs.file(asmtoolsJar)
                             .withPropertyName("asmtoolsJar")
                             .withPathSensitivity(PathSensitivity.NONE)
+                        inputs.dir(openJdkJcodDir)
+                            .withPropertyName("openJdkJcodDir")
+                            .withPathSensitivity(PathSensitivity.RELATIVE)
                         systemProperty("jardiff.asmtools.jar", asmtoolsJar.get().asFile.absolutePath)
+                        systemProperty("jardiff.openjdk.jcod.dir", openJdkJcodDir.get().asFile.absolutePath)
                     }
                 }
             }
