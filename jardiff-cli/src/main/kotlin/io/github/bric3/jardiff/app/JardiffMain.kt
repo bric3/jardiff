@@ -136,6 +136,9 @@ class JardiffMain : Callable<Int> {
         description = [
             "Tool used to produce class text, possible values:",
             "\${COMPLETION-CANDIDATES}",
+            "The javap producer uses the JDK running jardiff,",
+            "so output can vary by JDK version/vendor and",
+            "requires a JDK containing jdk.jdeps.",
             "Default: '\${DEFAULT-VALUE}'"
         ]
     )

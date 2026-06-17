@@ -11,6 +11,7 @@
 package io.github.bric3.jardiff.classes
 
 import io.github.bric3.jardiff.jcod.JcodTextifier
+import io.github.bric3.jardiff.javap.JavapTextifier
 import java.io.InputStream
 
 /**
@@ -38,8 +39,12 @@ enum class ClassTextifierProducer(private val producer: (ClassTextOptions) -> Cl
     /**
      * [JcodTextifier] - produces a JCod-compatible class-file listing
      */
-    jcod({ JcodClassTextifier })
-    // javap
+    jcod({ JcodClassTextifier }),
+
+    /**
+     * [JavapTextifier] - produces a javap verbose class-file listing using the JDK running jardiff
+     */
+    javap({ JavapClassTextifier })
     ;
 
     /** Create a [ClassTextifier] configured for one comparison run. */
@@ -48,6 +53,12 @@ enum class ClassTextifierProducer(private val producer: (ClassTextOptions) -> Cl
 
 private data object JcodClassTextifier : ClassTextifier() {
     private val textifier = JcodTextifier()
+
+    override fun toLines(inputStream: InputStream): List<String> = textifier.toLines(inputStream)
+}
+
+private data object JavapClassTextifier : ClassTextifier() {
+    private val textifier = JavapTextifier()
 
     override fun toLines(inputStream: InputStream): List<String> = textifier.toLines(inputStream)
 }

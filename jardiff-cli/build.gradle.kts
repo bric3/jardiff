@@ -19,6 +19,11 @@ val commandName = "jardiff"
 dependencies {
     implementation(project(":jardiff-differ"))
     implementation(libs.picocli)
+
+    add(
+        "jdkModuleAccessManifests",
+        project(mapOf("path" to ":jardiff-javap", "configuration" to "jdkModuleAccessManifestElements"))
+    )
 }
 
 application {
