@@ -19,8 +19,9 @@ import java.io.InputStream
  * Produces a JCod-compatible class-file listing.
  *
  * This implementation is written from the JVM class-file format and public JCod examples. It does
- * not copy OpenJDK AsmTools code. Attribute bodies are emitted as raw bytes so the listing remains
- * compact and round-trip oriented without reimplementing the OpenJDK attribute decoder.
+ * not copy OpenJDK AsmTools code. Common compact attribute bodies are decoded for readability;
+ * unsupported attribute bodies are emitted as raw bytes so the listing remains round-trip oriented
+ * without reimplementing the whole OpenJDK attribute decoder.
  */
 class JcodTextifier {
     fun toLines(inputStream: InputStream): List<String> = toText(inputStream).lines()
@@ -57,7 +58,11 @@ private data class RawJcodClassFile(
     override fun hashCode(): Int = bytes.contentHashCode()
 }
 
+private const val ATTRIBUTE_HEADER_BYTES = 6
+private const val U2_BYTES = 2
+
 private data class JcodClassFile(
+    val magic: Int,
     val minorVersion: Int,
     val majorVersion: Int,
     val constantPool: List<CpEntry?>,
@@ -72,7 +77,7 @@ private data class JcodClassFile(
     fun toJcod(): String = buildString {
         val className = className(thisClass)
         appendLine(topLevelDeclaration(className))
-        appendLine("  0xCAFEBABE;")
+        appendLine("  ${magic.toHex(8)};") // well-formed classes should be 0xCAFEBABE;
         appendLine("  $minorVersion; // minor version")
         appendLine("  $majorVersion; // version")
         appendConstantPool()
@@ -93,7 +98,8 @@ private data class JcodClassFile(
 
     private fun topLevelDeclaration(className: String): String {
         return when {
-            isModuleDeclaration(className) -> "module ${moduleName(className)} {"
+            isModuleDeclaration(className) -> "module ${moduleName()} {"
+            className.startsWith("#") -> "class $className {"
             className.canBeBareJcodClassName() -> "class $className {"
             else -> "file \"${className.jcodEscape()}.class\" {"
         }
@@ -102,15 +108,17 @@ private data class JcodClassFile(
     private fun isModuleDeclaration(className: String): Boolean {
         return accessFlags and ACC_MODULE != 0 &&
             majorVersion >= 53 &&
-            className.endsWith("module-info")
+            className == "module-info"
     }
 
-    private fun moduleName(className: String): String {
-        return if (className.endsWith("/module-info")) {
-            className.removeSuffix("/module-info")
-        } else {
-            ""
+    private fun moduleName(): String {
+        val moduleAttribute = attributes.firstOrNull { utf8(it.nameIndex) == "Module" } ?: return ""
+        if (moduleAttribute.info.size < U2_BYTES) {
+            return ""
         }
+        val moduleNameIndex = Cursor(moduleAttribute.info).readUnsignedShort()
+        val moduleEntry = constantPool.getOrNull(moduleNameIndex) as? CpEntry.ModuleInfo ?: return ""
+        return utf8(moduleEntry.nameIndex).orEmpty()
     }
 
     private fun StringBuilder.appendConstantPool() {
@@ -126,23 +134,23 @@ private data class JcodClassFile(
                     index++
                 }
                 is CpEntry.IntegerInfo -> {
-                    appendLine("    int ${entry.value.toHex(8)}; ${entry.comment(index)}")
+                    appendLine("    Integer ${entry.value.toHex(8)}; ${entry.comment(index)}")
                     index++
                 }
                 is CpEntry.FloatInfo -> {
-                    appendLine("    float ${entry.bits.toHex(8)}; ${entry.comment(index)}")
+                    appendLine("    Float ${entry.bits.toHex(8)}; ${entry.comment(index)}")
                     index++
                 }
                 is CpEntry.LongInfo -> {
-                    appendLine("    long ${entry.value.toHex(16)};; ${entry.comment(index)}")
+                    appendLine("    Long ${entry.value.toHex(16)};; ${entry.comment(index)}")
                     index += 2
                 }
                 is CpEntry.DoubleInfo -> {
-                    appendLine("    double ${entry.bits.toHex(16)};; ${entry.comment(index)}")
+                    appendLine("    Double ${entry.bits.toHex(16)};; ${entry.comment(index)}")
                     index += 2
                 }
                 is CpEntry.ClassInfo -> {
-                    appendLine("    class #${entry.nameIndex}; ${entry.comment(index)}")
+                    appendLine("    Class #${entry.nameIndex}; ${entry.comment(index)}")
                     index++
                 }
                 is CpEntry.StringInfo -> {
@@ -194,13 +202,16 @@ private data class JcodClassFile(
 
     private fun StringBuilder.appendMembers(name: String, elementName: String, members: List<MemberInfo>) {
         appendLine("  [${members.size}] { // $name")
-        members.forEach { member ->
+        members.forEachIndexed { index, member ->
             appendLine("    { // $elementName")
             appendLine("      ${member.accessFlags.toHex(4)}; // access")
             appendLine("      #${member.nameIndex}; // name_index")
             appendLine("      #${member.descriptorIndex}; // descriptor_index")
             appendAttributes(member.attributes, "Attributes", "      ")
             appendLine("    }")
+            if (index != members.lastIndex) {
+                appendLine("    ;")
+            }
         }
         appendLine("  } // end of $name")
     }
@@ -220,14 +231,41 @@ private data class JcodClassFile(
         val attributeName = utf8(attribute.nameIndex)
         appendLine("$indent${attribute.header(attributeName)}")
 
-        val code = if (attributeName == "Code") CodeInfo.parseOrNull(attribute.info) else null
-        if (code == null) {
-            appendRawBytes(attribute.info, "$indent  ")
-        } else {
-            appendCode(code, "$indent  ")
+        if (attribute.declaredLength != attribute.info.size ||
+            !appendStructuredAttribute(attributeName, attribute.info, "$indent  ")
+        ) {
+            appendRawAttributeBytes(attribute.info, "$indent  ")
         }
 
         appendLine("$indent}${attribute.endComment(attributeName)}")
+    }
+
+    private fun StringBuilder.appendStructuredAttribute(attributeName: String?, info: ByteArray, indent: String): Boolean {
+        return when (attributeName) {
+            "Code" -> appendCodeAttribute(info, indent)
+            "ConstantValue",
+            "ModuleMainClass",
+            "NestHost",
+            "Signature",
+            "SourceFile" -> appendSingleIndexAttribute(info, indent)
+            "EnclosingMethod" -> appendEnclosingMethodAttribute(info, indent)
+            "Exceptions" -> appendIndexListAttribute(info, indent, "Exceptions")
+            "NestMembers" -> appendIndexListAttribute(info, indent, "classes")
+            "PermittedSubclasses" -> appendIndexListAttribute(info, indent, "subclasses")
+            "InnerClasses" -> appendInnerClassesAttribute(info, indent)
+            "LineNumberTable" -> appendUnsignedShortRowsAttribute(info, indent, "line_number_table", 2)
+            "LocalVariableTable" -> appendUnsignedShortRowsAttribute(info, indent, "LocalVariableTable", 5)
+            "LocalVariableTypeTable" -> appendUnsignedShortRowsAttribute(info, indent, "LocalVariableTypeTable", 5)
+            "MethodParameters" -> appendMethodParametersAttribute(info, indent)
+            "Deprecated", "Synthetic" -> info.isEmpty()
+            else -> false
+        }
+    }
+
+    private fun StringBuilder.appendCodeAttribute(info: ByteArray, indent: String): Boolean {
+        val code = CodeInfo.parseOrNull(info, constantPool) ?: return false
+        appendCode(code, indent)
+        return true
     }
 
     private fun StringBuilder.appendCode(code: CodeInfo, indent: String) {
@@ -244,8 +282,102 @@ private data class JcodClassFile(
         appendAttributes(code.attributes, "Attributes", indent)
     }
 
+    private fun StringBuilder.appendSingleIndexAttribute(info: ByteArray, indent: String): Boolean {
+        if (info.size < U2_BYTES) {
+            return false
+        }
+
+        val cursor = Cursor(info)
+        appendLine("$indent#${cursor.readUnsignedShort()};")
+        if (!cursor.isAtEnd) {
+            appendRawBytes(cursor.readRemainingBytes(), indent)
+        }
+        return true
+    }
+
+    private fun StringBuilder.appendIndexListAttribute(info: ByteArray, indent: String, name: String): Boolean {
+        if (info.size < U2_BYTES) {
+            return false
+        }
+
+        val before = length
+        return runCatching {
+            val cursor = Cursor(info)
+            val count = cursor.readUnsignedShort()
+            val indices = List(count) {
+                require(cursor.remainingByteCount >= U2_BYTES) { "Unexpected end of index list attribute" }
+                cursor.readUnsignedShort()
+            }
+            appendLine("$indent[$count] { // $name")
+            indices.forEach { appendLine("$indent  #$it;") }
+            appendLine("$indent}")
+            if (!cursor.isAtEnd) {
+                appendRawBytes(cursor.readRemainingBytes(), indent)
+            }
+            true
+        }.getOrElse {
+            setLength(before)
+            false
+        }
+    }
+
+    private fun StringBuilder.appendEnclosingMethodAttribute(info: ByteArray, indent: String): Boolean {
+        return appendParsed(info) { cursor ->
+            appendLine("$indent#${cursor.readUnsignedShort()}; #${cursor.readUnsignedShort()};")
+        }
+    }
+
+    private fun StringBuilder.appendUnsignedShortRowsAttribute(
+        info: ByteArray,
+        indent: String,
+        name: String,
+        columns: Int
+    ): Boolean {
+        return appendParsed(info) { cursor ->
+            val rows = List(cursor.readUnsignedShort()) { cursor.readUnsignedShorts(columns) }
+            appendLine("$indent[${rows.size}] { // $name")
+            rows.forEach { row -> appendLine("$indent  ${row.joinToString(" ")};") }
+            appendLine("$indent}")
+        }
+    }
+
+    private fun StringBuilder.appendInnerClassesAttribute(info: ByteArray, indent: String): Boolean {
+        return appendParsed(info) { cursor ->
+            val rows = List(cursor.readUnsignedShort()) { cursor.readUnsignedShorts(4) }
+            appendLine("$indent[${rows.size}] { // classes")
+            rows.forEach { row ->
+                appendLine("$indent  #${row[0]} #${row[1]} #${row[2]} ${row[3]};")
+            }
+            appendLine("$indent}")
+        }
+    }
+
+    private fun StringBuilder.appendMethodParametersAttribute(info: ByteArray, indent: String): Boolean {
+        return appendParsed(info) { cursor ->
+            val rows = List(cursor.readUnsignedByte()) {
+                listOf(cursor.readUnsignedShort(), cursor.readUnsignedShort())
+            }
+            appendLine("$indent[${rows.size}]b { // MethodParameters")
+            rows.forEach { row -> appendLine("$indent  #${row[0]} ${row[1].toHex(4)};") }
+            appendLine("$indent}")
+        }
+    }
+
+    private fun StringBuilder.appendParsed(info: ByteArray, appendBody: StringBuilder.(Cursor) -> Unit): Boolean {
+        val before = length
+        return runCatching {
+            val cursor = Cursor(info)
+            appendBody(cursor)
+            require(cursor.isAtEnd) { "Unexpected trailing bytes in attribute" }
+            true
+        }.getOrElse {
+            setLength(before)
+            false
+        }
+    }
+
     private fun AttributeInfo.header(attributeName: String?): String {
-        return "Attr(#$nameIndex, ${info.size}) {${attributeName.commentPrefix()}"
+        return "Attr(#$nameIndex, $declaredLength) {${attributeName.commentPrefix()}"
     }
 
     private fun AttributeInfo.endComment(attributeName: String?): String {
@@ -259,9 +391,11 @@ private data class JcodClassFile(
     private fun className(index: Int): String {
         val classEntry = constantPool.getOrNull(index) as? CpEntry.ClassInfo
             ?: error("this_class does not reference a CONSTANT_Class entry: #$index")
-        val nameEntry = constantPool.getOrNull(classEntry.nameIndex) as? CpEntry.Utf8
-            ?: error("this_class name does not reference a CONSTANT_Utf8 entry: #${classEntry.nameIndex}")
-        return nameEntry.value
+        return when (val nameEntry = constantPool.getOrNull(classEntry.nameIndex)) {
+            is CpEntry.Utf8 -> nameEntry.value
+            is CpEntry.NameAndTypeInfo -> "#${nameEntry.nameIndex} #${nameEntry.descriptorIndex}"
+            else -> "#${classEntry.nameIndex}"
+        }
     }
 
     private fun utf8(index: Int): String? {
@@ -269,13 +403,11 @@ private data class JcodClassFile(
     }
 
     companion object {
-        private const val JAVA_MAGIC = 0xCAFEBABE.toInt()
         private const val ACC_MODULE = 0x8000
 
         fun parse(bytes: ByteArray): JcodClassFile {
             val cursor = Cursor(bytes)
             val magic = cursor.readInt()
-            require(magic == JAVA_MAGIC) { "Not a Java class file: ${magic.toHex(8)}" }
 
             val minorVersion = cursor.readUnsignedShort()
             val majorVersion = cursor.readUnsignedShort()
@@ -284,11 +416,12 @@ private data class JcodClassFile(
             val thisClass = cursor.readUnsignedShort()
             val superClass = cursor.readUnsignedShort()
             val interfaces = List(cursor.readUnsignedShort()) { cursor.readUnsignedShort() }
-            val fields = cursor.readMembers()
-            val methods = cursor.readMembers()
-            val attributes = cursor.readAttributes()
+            val fields = cursor.readMembers(constantPool)
+            val methods = cursor.readMembers(constantPool)
+            val attributes = cursor.readAttributes(constantPool)
 
             return JcodClassFile(
+                magic = magic,
                 minorVersion = minorVersion,
                 majorVersion = majorVersion,
                 constantPool = constantPool,
@@ -302,6 +435,10 @@ private data class JcodClassFile(
             )
         }
     }
+}
+
+private fun Cursor.readUnsignedShorts(count: Int): List<Int> {
+    return List(count) { readUnsignedShort() }
 }
 
 private sealed interface CpEntry {
@@ -348,7 +485,7 @@ private data class CodeInfo(
     val attributes: List<AttributeInfo>
 ) {
     companion object {
-        fun parseOrNull(bytes: ByteArray): CodeInfo? {
+        fun parseOrNull(bytes: ByteArray, constantPool: List<CpEntry?>): CodeInfo? {
             return runCatching {
                 val cursor = Cursor(bytes)
                 val maxStack = cursor.readUnsignedShort()
@@ -364,7 +501,7 @@ private data class CodeInfo(
                         catchType = cursor.readUnsignedShort()
                     )
                 }
-                val attributes = cursor.readAttributes()
+                val attributes = cursor.readAttributes(constantPool)
                 require(cursor.isAtEnd) { "Unexpected trailing bytes in Code attribute" }
                 CodeInfo(maxStack, maxLocals, bytecode, traps, attributes)
             }.getOrNull()
@@ -400,16 +537,18 @@ private data class TrapInfo(
 private data class AttributeInfo(
     val offset: Int,
     val nameIndex: Int,
+    val declaredLength: Int,
     val info: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         return this === other || other is AttributeInfo &&
             offset == other.offset &&
             nameIndex == other.nameIndex &&
+            declaredLength == other.declaredLength &&
             info.contentEquals(other.info)
     }
 
-    override fun hashCode(): Int = 31 * (31 * offset + nameIndex) + info.contentHashCode()
+    override fun hashCode(): Int = 31 * (31 * (31 * offset + nameIndex) + declaredLength) + info.contentHashCode()
 }
 
 private class Cursor(private val bytes: ByteArray) {
@@ -417,6 +556,9 @@ private class Cursor(private val bytes: ByteArray) {
 
     val isAtEnd: Boolean
         get() = offset == bytes.size
+
+    val remainingByteCount: Int
+        get() = bytes.size - offset
 
     private val position: Int
         get() = offset
@@ -452,6 +594,10 @@ private class Cursor(private val bytes: ByteArray) {
         }
     }
 
+    fun readRemainingBytes(): ByteArray {
+        return readBytes(remainingByteCount)
+    }
+
     fun readConstantPool(): List<CpEntry?> {
         val count = readUnsignedShort()
         val entries = MutableList<CpEntry?>(count) { null }
@@ -485,24 +631,34 @@ private class Cursor(private val bytes: ByteArray) {
         return entries
     }
 
-    fun readMembers(): List<MemberInfo> {
+    fun readMembers(constantPool: List<CpEntry?>): List<MemberInfo> {
         return List(readUnsignedShort()) {
             MemberInfo(
                 accessFlags = readUnsignedShort(),
                 nameIndex = readUnsignedShort(),
                 descriptorIndex = readUnsignedShort(),
-                attributes = readAttributes()
+                attributes = readAttributes(constantPool)
             )
         }
     }
 
-    fun readAttributes(): List<AttributeInfo> {
-        return List(readUnsignedShort()) {
+    fun readAttributes(constantPool: List<CpEntry?>): List<AttributeInfo> {
+        val count = readUnsignedShort()
+        return List(count) { index ->
             val offset = position
             val nameIndex = readUnsignedShort()
             val length = readInt()
             require(length >= 0) { "Attribute length does not fit in a signed Int: $length" }
-            AttributeInfo(offset, nameIndex, readBytes(length))
+            val remainingAttributeHeaders = (count - index - 1) * ATTRIBUTE_HEADER_BYTES
+            val readableLength = remainingByteCount - remainingAttributeHeaders
+            val maxInfoLength = readableLength.coerceAtLeast(0)
+            val attributeName = (constantPool.getOrNull(nameIndex) as? CpEntry.Utf8)?.value
+            val recoveredLength = if (length > maxInfoLength) {
+                knownAttributeLength(attributeName, bytes.copyOfRange(position, position + maxInfoLength))
+            } else {
+                null
+            }
+            AttributeInfo(offset, nameIndex, length, readBytes(recoveredLength ?: minOf(length, maxInfoLength)))
         }
     }
 
@@ -535,6 +691,90 @@ private class Cursor(private val bytes: ByteArray) {
     }
 }
 
+private fun knownAttributeLength(attributeName: String?, bytes: ByteArray): Int? {
+    return runCatching {
+        when (attributeName) {
+            "ConstantValue",
+            "ModuleMainClass",
+            "NestHost",
+            "Signature",
+            "SourceFile" -> U2_BYTES
+            "EnclosingMethod" -> 2 * U2_BYTES
+            "Exceptions",
+            "ModulePackages",
+            "NestMembers",
+            "PermittedSubclasses" -> countedU2ListLength(bytes)
+            "InnerClasses" -> countedFixedU2RowsLength(bytes, columns = 4)
+            "LineNumberTable" -> countedFixedU2RowsLength(bytes, columns = 2)
+            "LocalVariableTable",
+            "LocalVariableTypeTable" -> countedFixedU2RowsLength(bytes, columns = 5)
+            "MethodParameters" -> methodParametersLength(bytes)
+            "Module" -> moduleAttributeLength(bytes)
+            else -> null
+        }?.takeIf { it <= bytes.size }
+    }.getOrNull()
+}
+
+private fun countedU2ListLength(bytes: ByteArray): Int? {
+    if (bytes.size < U2_BYTES) {
+        return null
+    }
+    val cursor = Cursor(bytes)
+    return U2_BYTES + cursor.readUnsignedShort() * U2_BYTES
+}
+
+private fun countedFixedU2RowsLength(bytes: ByteArray, columns: Int): Int? {
+    if (bytes.size < U2_BYTES) {
+        return null
+    }
+    val cursor = Cursor(bytes)
+    return U2_BYTES + cursor.readUnsignedShort() * columns * U2_BYTES
+}
+
+private fun methodParametersLength(bytes: ByteArray): Int? {
+    if (bytes.isEmpty()) {
+        return null
+    }
+    val cursor = Cursor(bytes)
+    return 1 + cursor.readUnsignedByte() * 2 * U2_BYTES
+}
+
+private fun moduleAttributeLength(bytes: ByteArray): Int? {
+    val cursor = Cursor(bytes)
+    cursor.readUnsignedShort() // module_name_index
+    cursor.readUnsignedShort() // module_flags
+    cursor.readUnsignedShort() // module_version_index
+    repeat(cursor.readUnsignedShort()) {
+        cursor.readUnsignedShort() // requires_index
+        cursor.readUnsignedShort() // requires_flags
+        cursor.readUnsignedShort() // requires_version_index
+    }
+    repeat(cursor.readUnsignedShort()) {
+        cursor.readUnsignedShort() // exports_index
+        cursor.readUnsignedShort() // exports_flags
+        repeat(cursor.readUnsignedShort()) {
+            cursor.readUnsignedShort() // exports_to_index
+        }
+    }
+    repeat(cursor.readUnsignedShort()) {
+        cursor.readUnsignedShort() // opens_index
+        cursor.readUnsignedShort() // opens_flags
+        repeat(cursor.readUnsignedShort()) {
+            cursor.readUnsignedShort() // opens_to_index
+        }
+    }
+    repeat(cursor.readUnsignedShort()) {
+        cursor.readUnsignedShort() // uses_index
+    }
+    repeat(cursor.readUnsignedShort()) {
+        cursor.readUnsignedShort() // provides_index
+        repeat(cursor.readUnsignedShort()) {
+            cursor.readUnsignedShort() // provides_with_index
+        }
+    }
+    return bytes.size - cursor.remainingByteCount
+}
+
 private fun Int.toHex(width: Int): String = "0x${toUInt().toString(16).uppercase().padStart(width, '0')}"
 
 private fun Long.toHex(width: Int): String = "0x${toULong().toString(16).uppercase().padStart(width, '0')}"
@@ -550,6 +790,20 @@ private fun StringBuilder.appendRawBytes(bytes: ByteArray, indent: String) {
     bytes.asIterable().chunked(12).forEach { chunk ->
         append(indent)
         append(chunk.joinToString(" ") { byte -> (byte.toInt() and 0xff).toHex(2) })
+        appendLine(";")
+    }
+}
+
+private fun StringBuilder.appendRawAttributeBytes(bytes: ByteArray, indent: String) {
+    bytes.asIterable().chunked(16).forEach { chunk ->
+        append(indent)
+        append(
+            chunk.chunked(4).joinToString(" ") { literalBytes ->
+                "0x" + literalBytes.joinToString("") { byte ->
+                    (byte.toInt() and 0xff).toString(16).uppercase().padStart(2, '0')
+                }
+            }
+        )
         appendLine(";")
     }
 }
@@ -579,6 +833,7 @@ private val openJdkFileDeclarationClassNames = setOf(
 private fun String.jcodEscape(): String = buildString {
     this@jcodEscape.forEach { char ->
         when (char) {
+            '\'' -> append("\\'")
             '"' -> append("\\\"")
             '\\' -> append("\\\\")
             '\b' -> append("\\b")
@@ -587,7 +842,7 @@ private fun String.jcodEscape(): String = buildString {
             '\u000C' -> append("\\f")
             '\r' -> append("\\r")
             else -> {
-                if (char.code < 0x20 || char.code == 0x7f) {
+                if (char.code < 0x20 || char.code in 0x7f..0x9f) {
                     append("\\u")
                     append(char.code.toString(16).padStart(4, '0'))
                 } else {
