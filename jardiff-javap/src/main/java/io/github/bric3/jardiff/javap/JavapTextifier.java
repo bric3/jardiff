@@ -23,10 +23,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Produces a javap verbose class-file listing using the JDK running jardiff.
@@ -44,26 +44,26 @@ public final class JavapTextifier {
     );
 
     public List<String> toLines(InputStream inputStream) {
-        return toText(inputStream).lines().collect(Collectors.toList());
-    }
-
-    public String toText(InputStream inputStream) {
         try {
             return textify(inputStream);
         } catch (Exception | LinkageError failure) {
-            return warning("javap could not process this class", failure);
+            return warningLines("javap could not process this class", failure);
         }
     }
 
-    private String textify(InputStream inputStream) throws IOException {
+    public String toText(InputStream inputStream) {
+        return String.join(System.lineSeparator(), toLines(inputStream));
+    }
+
+    private List<String> textify(InputStream inputStream) throws IOException {
         byte[] classBytes = inputStream.readAllBytes();
-        StringWriter output = new StringWriter();
         var compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
-            return warning("javap requires a JDK with the jdk.compiler module", (Throwable) null);
+            return warningLines("javap requires a JDK with the jdk.compiler module", (Throwable) null);
         }
 
-        try (StandardJavaFileManager standardFileManager = compiler.getStandardFileManager(null, null, null)) {
+        try (StandardJavaFileManager standardFileManager = compiler.getStandardFileManager(null, null, null);
+             LineCollectingWriter output = new LineCollectingWriter()) {
             JavaFileManager fileManager = new MemoryClassFileManager(standardFileManager, classBytes);
             JavapTask task = new JavapTask(
                     output,
@@ -73,35 +73,29 @@ public final class JavapTextifier {
                     List.of(MEMORY_CLASS_NAME)
             );
             if (!task.call()) {
-                return warning("javap could not process this class", output.toString());
+                return warningLines("javap could not process this class", output.lines());
             }
+            return output.lines();
         }
-
-        return normalize(output.toString());
     }
 
-    private static String normalize(String text) {
-        return text.lines()
-                .filter(line -> !line.startsWith("Classfile "))
-                .collect(Collectors.joining(System.lineSeparator()));
-    }
-
-    private static String warning(String message, Throwable failure) {
+    private static List<String> warningLines(String message, Throwable failure) {
         if (failure == null) {
-            return "// WARNING: " + message;
+            return List.of("// WARNING: " + message);
         }
-        return warning(message, failure.getClass().getSimpleName() + ": " + failure.getMessage());
+        return warningLines(message, List.of(failure.getClass().getSimpleName() + ": " + failure.getMessage()));
     }
 
-    private static String warning(String message, String detail) {
-        StringBuilder warning = new StringBuilder("// WARNING: ").append(message);
-        if (detail != null && !detail.isBlank()) {
-            detail.lines()
+    private static List<String> warningLines(String message, List<String> detailLines) {
+        ArrayList<String> warning = new ArrayList<>();
+        warning.add("// WARNING: " + message);
+        if (detailLines != null) {
+            detailLines.stream()
                     .map(String::trim)
                     .filter(line -> !line.isEmpty())
-                    .forEach(line -> warning.append(System.lineSeparator()).append("// ").append(line));
+                    .forEach(line -> warning.add("// " + line));
         }
-        return warning.toString();
+        return warning;
     }
 
     private static final class MemoryClassFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
@@ -149,6 +143,84 @@ public final class JavapTextifier {
         @Override
         public long getLastModified() {
             return -1L;
+        }
+    }
+
+    private static final class LineCollectingWriter extends Writer {
+        private final ArrayList<String> lines = new ArrayList<>();
+        private final StringBuilder currentLine = new StringBuilder();
+        private boolean closed;
+
+        @Override
+        public void write(char[] buffer, int offset, int length) {
+            ensureOpen();
+            append(buffer, offset, length);
+        }
+
+        @Override
+        public void write(String text, int offset, int length) {
+            ensureOpen();
+            for (int index = offset; index < offset + length; index++) {
+                appendCharacter(text.charAt(index));
+            }
+        }
+
+        @Override
+        public void flush() {
+            ensureOpen();
+        }
+
+        @Override
+        public void close() {
+            if (!closed) {
+                flushCurrentLine();
+                closed = true;
+            }
+        }
+
+        List<String> lines() {
+            if (!closed) {
+                flushCurrentLine();
+            }
+            return lines;
+        }
+
+        private void append(char[] buffer, int offset, int length) {
+            for (int index = offset; index < offset + length; index++) {
+                appendCharacter(buffer[index]);
+            }
+        }
+
+        private void appendCharacter(char character) {
+            if (character == '\n') {
+                appendCurrentLine();
+            } else {
+                currentLine.append(character);
+            }
+        }
+
+        private void flushCurrentLine() {
+            if (currentLine.length() > 0) {
+                appendCurrentLine();
+            }
+        }
+
+        private void appendCurrentLine() {
+            int lineLength = currentLine.length();
+            if (lineLength > 0 && currentLine.charAt(lineLength - 1) == '\r') {
+                currentLine.setLength(lineLength - 1);
+            }
+            String line = currentLine.toString();
+            currentLine.setLength(0);
+            if (!line.startsWith("Classfile ")) {
+                lines.add(line);
+            }
+        }
+
+        private void ensureOpen() {
+            if (closed) {
+                throw new IllegalStateException("Writer is closed");
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +39,22 @@ class JavapTextifierTest {
                 )
                 .doesNotStartWith("Classfile memory:///jardiff-memory.class")
                 .doesNotContain("\n  Last modified ");
+    }
+
+    @Test
+    void textifiesClassBytesDirectlyAsLines() throws IOException {
+        List<String> lines;
+        try (var inputStream = Objects.requireNonNull(
+                JavapTextifierTest.class.getResourceAsStream("JavapTextifierTest.class")
+        )) {
+            lines = new JavapTextifier().toLines(inputStream);
+        }
+
+        assertThat(lines)
+                .contains("Constant pool:")
+                .anySatisfy(line -> assertThat(line)
+                        .contains("class io.github.bric3.jardiff.javap.JavapTextifierTest"))
+                .noneMatch(line -> line.startsWith("Classfile "));
     }
 
     @Test
