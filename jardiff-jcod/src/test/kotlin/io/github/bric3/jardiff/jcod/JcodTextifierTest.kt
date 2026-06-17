@@ -11,7 +11,6 @@
 package io.github.bric3.jardiff.jcod
 
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 
@@ -27,7 +26,10 @@ class JcodTextifierTest {
             "  } // end of Constant Pool",
             " // Methods",
             "  } // end of Methods",
-            "Attr(#"
+            "Attr(#",
+            " // Code",
+            " // Traps",
+            " at 0x"
         )
     }
 
@@ -39,10 +41,16 @@ class JcodTextifierTest {
     }
 
     @Test
-    fun `fails for non class input`() {
-        assertThatCode {
-            JcodTextifier().toText(ByteArrayInputStream(byteArrayOf(0x12, 0x34, 0x56)))
-        }.isInstanceOf(IllegalArgumentException::class.java)
+    fun `textifies malformed input as raw jcod bytes`() {
+        val text = JcodTextifier().toText(ByteArrayInputStream(byteArrayOf(0x12, 0x34, 0x56)))
+
+        assertThat(text).contains(
+            "// JCodTextifier could not parse this class structurally.",
+            "// Raw bytes preserve the original class file for AsmTools round-trip.",
+            "file \"class-bytes.class\" Bytes[3]z {",
+            "  0x12 0x34 0x56;",
+            "}"
+        )
     }
 
     private fun classBytes(): ByteArray {

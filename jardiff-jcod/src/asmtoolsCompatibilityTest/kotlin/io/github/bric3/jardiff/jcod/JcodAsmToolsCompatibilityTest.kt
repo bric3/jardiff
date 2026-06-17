@@ -10,7 +10,6 @@
 
 package io.github.bric3.jardiff.jcod
 
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.Named.named
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.opentest4j.TestAbortedException
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -121,54 +119,27 @@ class JcodAsmToolsCompatibilityTest {
         val regeneratedJcod = regeneratedJcodDir.resolve(originalClass.relativePath.withExtension("jcod"))
         Files.createDirectories(regeneratedJcod.parent)
 
-        val jcodClassText = textifyOrAbort(originalClass)
+        val jcodClassText = JcodTextifier().toText(ByteArrayInputStream(Files.readAllBytes(originalClass.file)))
+        assertUsesOpenJdkTopLevelDeclaration(originalClass, jcodClassText)
         Files.writeString(regeneratedJcod, jcodClassText)
 
-        val regeneratedClass = tryAssembleSingleClassFromJcod(originalClass, regeneratedJcod, regeneratedClassDir)
+        val regeneratedClass = assembleSingleClassFromJcod(originalClass, regeneratedJcod, regeneratedClassDir)
 
         assertThat(Files.readAllBytes(regeneratedClass))
             .describedAs(originalClass.displayName)
             .isEqualTo(Files.readAllBytes(originalClass.file))
     }
 
-    private fun tryAssembleSingleClassFromJcod(
+    private fun assembleSingleClassFromJcod(
         originalClass: AssembledClass,
         regeneratedJcod: Path,
         outputDir: Path
-    ): Path = try {
-        assembleClassesFromJcod(regeneratedJcod, outputDir).single()
-    } catch (error: AssertionError) {
-        throw TestAbortedException(
-            "Regenerated JCod is not accepted by AsmTools for ${originalClass.displayName}",
-            error
-        )
-    }
-
-    /**
-     * Converts the bytecode of an assembled class file into a textual representation or aborts the test
-     * if the class file is malformed or uses an unsupported structure.
-     *
-     * Some OpenJDK's jcod files are intentionally crafted to produce malformed class files.
-     * In that case, the produced output is not interesting for us and we can abort the test.
-     *
-     * @param originalClass the assembled class to be textified, containing its source, root, and file path.
-     * @return the textual representation of the class file.
-     * @throws TestAbortedException if the class file is malformed or uses an unsupported format.
-     */
-    private fun textifyOrAbort(originalClass: AssembledClass): String {
-        return try {
-            JcodTextifier().toText(ByteArrayInputStream(Files.readAllBytes(originalClass.file)))
-        } catch (exception: IllegalArgumentException) {
-            throw TestAbortedException(
-                "OpenJDK fixture assembles to a malformed class file: ${originalClass.displayName}",
-                exception
-            )
-        } catch (exception: IllegalStateException) {
-            throw TestAbortedException(
-                "OpenJDK fixture uses an unsupported class-file shape: ${originalClass.displayName}",
-                exception
-            )
-        }
+    ): Path {
+        val regeneratedClasses = assembleClassesFromJcod(regeneratedJcod, outputDir)
+        assertThat(regeneratedClasses)
+            .describedAs("Regenerated class files for ${originalClass.displayName}")
+            .hasSize(1)
+        return regeneratedClasses.single()
     }
 
     private data class AssembledClass(
@@ -191,6 +162,48 @@ class JcodAsmToolsCompatibilityTest {
 
     private fun Path.withExtension(extension: String): Path {
         return (parent ?: Path.of("")).resolve("$nameWithoutExtension.$extension")
+    }
+
+    private fun assertUsesOpenJdkTopLevelDeclaration(originalClass: AssembledClass, jcodClassText: String) {
+        val emittedDeclaration = jcodClassText.firstJcodDeclaration()
+        if (emittedDeclaration.isRawByteDeclaration()) {
+            assertThat(jcodClassText)
+                .describedAs("${originalClass.displayName} raw JCod fallback")
+                .contains("// JCodTextifier could not parse this class structurally.")
+            return
+        }
+
+        assertThat(openJdkTopLevelDeclarations(originalClass.sourceJcod))
+            .describedAs("${originalClass.displayName} OpenJDK top-level declarations")
+            .contains(emittedDeclaration)
+    }
+
+    private fun String.firstJcodDeclaration(): String {
+        return lineSequence()
+            .map { it.trimEnd() }
+            .first { it.isJcodTopLevelDeclaration() }
+            .normalizeJcodDeclaration()
+    }
+
+    private fun openJdkTopLevelDeclarations(sourceJcod: Path): List<String> {
+        return Files.readAllLines(sourceJcod)
+            .asSequence()
+            .map { it.trimEnd() }
+            .filter { it.isJcodTopLevelDeclaration() }
+            .map { it.normalizeJcodDeclaration() }
+            .toList()
+    }
+
+    private fun String.isJcodTopLevelDeclaration(): Boolean {
+        return startsWith("class ") || startsWith("file \"") || startsWith("module ")
+    }
+
+    private fun String.isRawByteDeclaration(): Boolean {
+        return startsWith("file \"class-bytes.class\" Bytes[")
+    }
+
+    private fun String.normalizeJcodDeclaration(): String {
+        return "${substringBefore("{").trimEnd()} {"
     }
 
     companion object {
