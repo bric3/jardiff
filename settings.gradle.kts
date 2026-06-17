@@ -67,6 +67,7 @@ rootProject.name = "jardiff"
 include(
     "jardiff-cli",
     "jardiff-differ",
+    "jardiff-javap",
     "jardiff-jcod",
 )
 

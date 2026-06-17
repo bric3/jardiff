@@ -26,6 +26,16 @@ class ClassTextifierProducerTest {
         )
     }
 
+    @Test
+    fun `javap producer adapts the standalone javap textifier`() {
+        val text = ClassTextifierProducer.javap.create().toText(ByteArrayInputStream(classBytes()))
+
+        assertThat(text).contains(
+            "class io.github.bric3.jardiff.classes.ClassTextifierProducerTest",
+            "Constant pool:"
+        ).doesNotStartWith("Classfile memory:///jardiff-memory.class")
+    }
+
     private fun classBytes(): ByteArray {
         val resourceName = "${ClassTextifierProducerTest::class.java.name.replace('.', '/')}.class"
         return checkNotNull(ClassTextifierProducerTest::class.java.classLoader.getResourceAsStream(resourceName)) {

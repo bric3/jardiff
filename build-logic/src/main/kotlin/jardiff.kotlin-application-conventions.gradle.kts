@@ -1,4 +1,5 @@
 import io.github.bric3.gradle.executableArchive.ExecutableJarTask
+import org.gradle.api.tasks.compile.JavaCompile
 
 /*
  * jardiff
@@ -14,6 +15,14 @@ plugins {
     id("jardiff.kotlin-common-conventions")
     application
     id("com.gradleup.shadow")
+}
+
+val jdkModuleAccessManifests = configurations.named(JDK_MODULE_ACCESS_MANIFESTS_CONFIGURATION_NAME)
+
+val mergeJdkModuleAccessManifest by tasks.registering(MergeJdkModuleAccessManifest::class) {
+    description = "Merge runtime manifest entries required by dependency modules."
+    inputFiles.from(jdkModuleAccessManifests)
+    outputFile.set(layout.buildDirectory.file("generated/jdk-module-access/MANIFEST.MF"))
 }
 
 // Separate source set for the Java 8 Main class
@@ -35,6 +44,7 @@ tasks {
 
     shadowJar {
         from(java8Main.output)
+        manifest.from(mergeJdkModuleAccessManifest.flatMap { it.outputFile })
 
         archiveBaseName = project.name
         archiveClassifier = ""
