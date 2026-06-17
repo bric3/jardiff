@@ -12,9 +12,9 @@ Jardiff is a command-line tool for comparing the contents of JAR files and direc
 > 
 > While [lightbend-labs/jardiff](https://github.com/lightbend-labs/jardiff) and this tool share the same name and similar goals, they have different features:
 > 
-> The **lightbend-labs/jardiff** focuses on Scala projects, and it has a some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
+> The **lightbend-labs/jardiff** focuses on Scala projects, and it has some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
 > 
-> While this **bric3/jardiff** tool offers a more versatile tool to inspect class differences
+> However, **bric3/jardiff** offers a more versatile tooling to inspect class differences
 > * Additional to the usual diff output, it provides statistics (`--stat`) and status (`--status`)
 >   modes similar to git diff/status
 > * Supports class extension coalescing, in case classes are renamed to other extensions like `.bin`, `.clazz`, etc.
@@ -66,23 +66,28 @@ Example output in default mode:
      ANEWARRAY java/lang/String
 ```
 
-Or with the `--stat` mode
+Or with the `--status` mode
 
 ```
 D  foo/bar/qux/Zuul.class
  D foo/bar/qux/Zig.class
 M  foo/bar/qux/Baz.class
-   foo/bar/qux/Zorg.class
 ```
 
-Or with the `--status` mode
+Or with the `--stat` mode
 
 ```
  foo/bar/qux/Zuul.class | 42 ++++++++++++++++++++++++++++++++----------
  foo/bar/qux/Zig.class  |  1 -
  foo/bar/qux/Baz.class  | 34 ++++++++++++++++++++++------------
- foo/bar/qux/Zorg.class |  0 
- 4 files changed, 54 insertions(+), 23 deletions(-)
+ 3 files changed, 54 insertions(+), 23 deletions(-)
+```
+
+With class extension coalescing, paths with different left and right extensions use a Git-style
+brace form:
+
+```
+M  foo/bar/qux/Baz{.class => .classdata}
 ```
 
 When output piped to [delta](https://github.com/dandavison/delta), it looks like this:
@@ -97,6 +102,7 @@ Other tools didn't have the feature I wanted, or they were impractical to use, s
 * Compare JARs and directories recursively
 * Line-based diffs for each files
 * Class file comparison using different strategy to produce text
+   * Auto-detects class files from their bytecode header, even without a `.class` extension
    * ASM's Textify (_default_)
    * Class outline (version, is kotlin/groovy class, synthetic or bridge members)
    * Class File Version only
@@ -138,12 +144,12 @@ Compares two JAR files or directories and reports differences.
                        Coalesce class files with the given extensions, in
                        addition to the usual 'class', i.e. makes classes
                        named 'Foo.class' and 'Foo.bin' aliased to the same
-                       file same entry. Also this enables the file to be
-                       compared on bytecode level Takes a comma separated
-                       list, e.g. 'classdata' or 'raw,bin,clazz'.
+                       file entry. Class files are auto-detected from their
+                       bytecode header. Takes a comma separated list, e.g.
+                       'classdata' or 'raw,bin,clazz'.
       --class-text-producer=<tool>
                        Tool used to produce class text, possible values:
-                       asm-textifier, class-file-version, class-outline
+                       asm-textifier, class-file-version, class-outline, jcod
                        Default: 'asm-textifier'
       --color=<when>   Control when to use color output:
                        always, auto, never
@@ -165,7 +171,7 @@ Compares two JAR files or directories and reports differences.
                        Displays file-by-file statistics with
                          additions/deletions.
       --status         Show short status output (like 'git status --short').
-                       Displays two-column XY status for each file.
+                       Displays two-column XY status for changed files.
   -v                   Specify multiple -v options to increase verbosity.
                        For example, '-v -v' or '-vv'.
   -V, --version        Print version information and exit.

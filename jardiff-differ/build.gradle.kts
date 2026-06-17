@@ -15,6 +15,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":jardiff-jcod"))
     implementation(libs.bundles.asm)
     implementation(libs.javadiffutils)
     implementation(libs.tika)

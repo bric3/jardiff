@@ -1,3 +1,6 @@
+import com.javiersc.gradle.version.GradleVersion
+import com.javiersc.semver.project.gradle.plugin.VersionMapper
+
 /*
  * jardiff
  *
@@ -19,15 +22,38 @@ plugins {
     id("com.javiersc.semver") version "0.9.0"
 }
 
+class JardiffVersionMapper(private val rootDirPath: String) : VersionMapper {
+    @Transient
+    private var shortHeadHash: String? = null
+
+    override fun map(version: GradleVersion): String =
+        if (version.commits == 0 && version.metadata.isNullOrBlank()) {
+            "${version.major}.${version.minor}.${version.patch}"
+        } else if (version.hash == null && version.metadata == "DIRTY") {
+            version.copy(hash = shortHeadHash(), metadata = "DIRTY").toString()
+        } else {
+            version.toString()
+        }
+
+    // Canot use a provider or value source here, as this runs inside semver's
+    // own VersionValueSource, and having a provider here would prevent serialization
+    private fun shortHeadHash(): String =
+        shortHeadHash ?: run {
+            val process = ProcessBuilder("git", "-C", rootDirPath, "rev-parse", "--short=7", "HEAD")
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+            val exitCode = process.waitFor()
+            check(exitCode == 0) {
+                "git rev-parse --short=7 HEAD failed with exit code $exitCode: $output"
+            }
+            output.also { shortHeadHash = it }
+        }
+}
+
 semver {
     // Workaround to avoid having commit count and metadata in the version on the tagged commit
-    mapVersion { gradleVersion ->
-        if (gradleVersion.commits == 0 && gradleVersion.metadata.isNullOrBlank()) {
-            "${gradleVersion.major}.${gradleVersion.minor}.${gradleVersion.patch}"
-        } else {
-            gradleVersion.toString()
-        }
-    }
+    mapVersion(JardiffVersionMapper(rootDir.absolutePath))
 }
 
 dependencyResolutionManagement {
@@ -40,7 +66,8 @@ rootProject.name = "jardiff"
 
 include(
     "jardiff-cli",
-    "jardiff-differ"
+    "jardiff-differ",
+    "jardiff-jcod",
 )
 
 nmcpSettings {

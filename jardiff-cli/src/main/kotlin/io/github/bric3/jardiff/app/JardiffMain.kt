@@ -10,9 +10,6 @@
 
 package io.github.bric3.jardiff.app
 
-import io.github.bric3.jardiff.classes.ClassMemberOrder
-import io.github.bric3.jardiff.classes.ClassTextOptions
-import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Differ
 import io.github.bric3.jardiff.Logger
@@ -20,6 +17,9 @@ import io.github.bric3.jardiff.OutputMode
 import io.github.bric3.jardiff.PathToDiff
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.LEFT
 import io.github.bric3.jardiff.PathToDiff.LeftOrRight.RIGHT
+import io.github.bric3.jardiff.classes.ClassMemberOrder
+import io.github.bric3.jardiff.classes.ClassTextOptions
+import io.github.bric3.jardiff.classes.ClassTextifierProducer
 import picocli.CommandLine
 import picocli.CommandLine.ArgGroup
 import picocli.CommandLine.Command
@@ -94,7 +94,7 @@ class JardiffMain : Callable<Int> {
             names = ["--status"],
             description = [
                 "Show short status output (like 'git status --short').",
-                "Displays two-column XY status for each file."
+                "Displays two-column XY status for changed files."
             ]
         )
         fun setStatus(value: Boolean) {
@@ -121,9 +121,9 @@ class JardiffMain : Callable<Int> {
             "Coalesce class files with the given extensions, in",
             "addition to the usual 'class', i.e. makes classes",
             "named 'Foo.class' and 'Foo.bin' aliased to the same",
-            "file same entry. Also this enables the file to be",
-            "compared on bytecode level Takes a comma separated",
-            "list, e.g. 'classdata' or 'raw,bin,clazz'."
+            "file entry. Class files are auto-detected from their",
+            "bytecode header. Takes a comma separated list, e.g.",
+            "'classdata' or 'raw,bin,clazz'."
         ],
         split = ","
     )

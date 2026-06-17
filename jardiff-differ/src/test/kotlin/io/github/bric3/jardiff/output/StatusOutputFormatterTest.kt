@@ -12,7 +12,6 @@ package io.github.bric3.jardiff.output
 
 import io.github.bric3.jardiff.ColorMode
 import io.github.bric3.jardiff.Logger
-import io.github.bric3.jardiff.green
 import io.github.bric3.jardiff.red
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -62,7 +61,7 @@ class StatusOutputFormatterTest {
     }
 
     @Test
-    fun `should show    when file unchanged`() {
+    fun `should not show file unchanged`() {
         val formatter = StatusOutputFormatter()
         val output = StringWriter()
         val logger = Logger(output, StringWriter(), booleanArrayOf(), ColorMode.always)
@@ -72,7 +71,7 @@ class StatusOutputFormatterTest {
             FileComparisonData("test.txt", leftExists = true, rightExists = true, unifiedDiff = emptyList())
         )
 
-        assertThat(output.toString()).isEqualTo("${green("  ")} test.txt\n")
+        assertThat(output.toString()).isEmpty()
     }
 
     @Test
@@ -103,7 +102,6 @@ class StatusOutputFormatterTest {
             ${red("D ")} file1.txt
             ${red(" D")} file2.txt
             ${red("M ")} file3.txt
-            ${green("  ")} file4.txt
 
             """.trimIndent()
         )
