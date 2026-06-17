@@ -15,7 +15,7 @@ import java.io.InputStream
 /**
  * Abstract class for producing a text representation from a Class [java.io.InputStream].
  */
-sealed class ClassTextifier() {
+sealed class ClassTextifier {
     /**
      * Convert the given [inputStream] representing a class file into a list of lines.
      */

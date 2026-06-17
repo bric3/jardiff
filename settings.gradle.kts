@@ -66,7 +66,8 @@ rootProject.name = "jardiff"
 
 include(
     "jardiff-cli",
-    "jardiff-differ"
+    "jardiff-differ",
+    "jardiff-jcod",
 )
 
 nmcpSettings {

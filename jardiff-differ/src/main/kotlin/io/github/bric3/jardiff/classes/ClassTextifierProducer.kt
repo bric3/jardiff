@@ -10,6 +10,9 @@
 
 package io.github.bric3.jardiff.classes
 
+import io.github.bric3.jardiff.jcod.JcodTextifier
+import java.io.InputStream
+
 /**
  * Enum of available [ClassTextifier] producers.
  *
@@ -30,10 +33,21 @@ enum class ClassTextifierProducer(private val producer: (ClassTextOptions) -> Cl
     /**
      * [ClassOutline] - produces a text outline of the class structure
      */
-    `class-outline`({ options -> ClassOutline(options) })
+    `class-outline`({ options -> ClassOutline(options) }),
+
+    /**
+     * [JcodTextifier] - produces a JCod-compatible class-file listing
+     */
+    jcod({ JcodClassTextifier })
     // javap
     ;
 
     /** Create a [ClassTextifier] configured for one comparison run. */
     fun create(options: ClassTextOptions = ClassTextOptions()) = producer(options)
+}
+
+private data object JcodClassTextifier : ClassTextifier() {
+    private val textifier = JcodTextifier()
+
+    override fun toLines(inputStream: InputStream): List<String> = textifier.toLines(inputStream)
 }

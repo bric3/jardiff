@@ -149,7 +149,7 @@ Compares two JAR files or directories and reports differences.
                        'classdata' or 'raw,bin,clazz'.
       --class-text-producer=<tool>
                        Tool used to produce class text, possible values:
-                       asm-textifier, class-file-version, class-outline
+                       asm-textifier, class-file-version, class-outline, jcod
                        Default: 'asm-textifier'
       --color=<when>   Control when to use color output:
                        always, auto, never
