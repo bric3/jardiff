@@ -17,13 +17,7 @@ plugins {
     id("com.gradleup.shadow")
 }
 
-val jdkModuleAccessManifests = configurations.named(JDK_MODULE_ACCESS_MANIFESTS_CONFIGURATION_NAME)
-
-val mergeJdkModuleAccessManifest by tasks.registering(MergeJdkModuleAccessManifest::class) {
-    description = "Merge runtime manifest entries required by dependency modules."
-    inputFiles.from(jdkModuleAccessManifests)
-    outputFile.set(layout.buildDirectory.file("generated/jdk-module-access/MANIFEST.MF"))
-}
+val mergeJdkModuleAccessManifest = tasks.named<MergeJdkModuleAccessManifest>("mergeJdkModuleAccessManifest")
 
 // Separate source set for the Java 8 Main class
 val java8Main by sourceSets.creating {

@@ -10,6 +10,14 @@
 
 import org.gradle.jvm.tasks.Jar
 
+/**
+ * Configures the JDK module access extension.
+ *
+ * The `jdkModuleAccess` extension is responsible for managing the JDK modules
+ * and internal package exports that are used by the project and need to be available
+ * to downstream projects. This extension prepares module access data, and it can also
+ * define extra manifest entries.
+ */
 abstract class JdkModuleAccessExtension {
     abstract val modules: SetProperty<String>
     abstract val exports: SetProperty<String>
@@ -39,6 +47,7 @@ val generateJdkModuleAccessManifest by tasks.registering(GenerateJdkModuleAccess
 }
 
 tasks {
+    // Keep the producer artifact self-describing for direct jar consumers.
     named<Jar>(JavaPlugin.JAR_TASK_NAME) {
         manifest.attributes(
             "Add-Exports" to jdkModuleAccess.exports.map { exportedPackages ->
@@ -60,6 +69,8 @@ tasks {
     }
 }
 
+// This is intentionally separate from runtimeElements: the file is metadata to merge/read,
+// not a jar to put on a runtime classpath or expand into a Shadow jar.
 configurations.register(JDK_MODULE_ACCESS_MANIFEST_ELEMENTS_CONFIGURATION_NAME) {
     isCanBeConsumed = true
     isCanBeResolved = false

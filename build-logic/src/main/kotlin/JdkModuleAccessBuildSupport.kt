@@ -61,6 +61,8 @@ abstract class JdkModuleAccessManifestArgumentProvider : CommandLineArgumentProv
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val inputFiles: ConfigurableFileCollection
 
+    // Convert resolved Add-Exports/Add-Opens manifest metadata into JVM flags
+    // for tasks that do not launch from a jar manifest.
     override fun asArguments(): Iterable<String> {
         val attributes = parseManifestAttributes(inputFiles)
         return buildList {
@@ -80,6 +82,11 @@ abstract class JdkModuleAccessManifestArgumentProvider : CommandLineArgumentProv
     }
 }
 
+/**
+ * Produces the metadata artifact published by the producer convention.
+ *
+ * It is a real MANIFEST.MF so it can also be merged directly into application jars.
+ */
 abstract class GenerateJdkModuleAccessManifest : DefaultTask() {
     @get:Input
     abstract val exports: SetProperty<String>
@@ -108,6 +115,9 @@ abstract class GenerateJdkModuleAccessManifest : DefaultTask() {
     }
 }
 
+/**
+ * Merges all resolved producer metadata into one MANIFEST.MF for the final application jar.
+ */
 abstract class MergeJdkModuleAccessManifest : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
