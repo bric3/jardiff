@@ -23,30 +23,37 @@ dependencies {
 
     testImplementation(libs.asm.tree)
 
-    add(
-        "jdkModuleAccessManifests",
-        project(mapOf("path" to ":jardiff-javap", "configuration" to "jdkModuleAccessManifestElements"))
-    )
+    jdkModuleAccessManifests(project(":jardiff-javap"))
 }
 
 tasks {
-    jar {
-        manifest {
-            attributes(
-                "Implementation-Title" to project.name,
-                "Implementation-Version" to project.version
-            )
-        }
-    }
-
     test {
-        val fixtureJarPath = testFixturesJar.map { it.archiveFile.get().asFile.absolutePath }
-        val fixturesKotlinClassesPath = sourceSets.testFixtures.map { it.kotlin.classesDirectory.get().asFile.absolutePath }
-        val fixturesResourcesPath = sourceSets.testFixtures.map { it.output.resourcesDir }
-        doFirst {
-            systemProperties("text-fixtures.jar.path" to fixtureJarPath.get())
-            systemProperties("text-fixtures.kotlin.classes.path" to fixturesKotlinClassesPath.get())
-            systemProperties("text-fixtures.resources.path" to fixturesResourcesPath.get())
-        }
+        jvmArgumentProviders.add(
+            objects.newInstance(TestFixturesArgumentProvider::class.java).also {
+                it.fixtureJar = testFixturesJar.flatMap { task -> task.archiveFile }
+                it.fixtureKotlinClasses.from(sourceSets.testFixtures.flatMap { it.kotlin.classesDirectory })
+                it.fixtureResources.from(sourceSets.testFixtures.map { it.output.resourcesDir })
+            }
+        )
     }
+}
+
+abstract class TestFixturesArgumentProvider : CommandLineArgumentProvider {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val fixtureJar: RegularFileProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val fixtureKotlinClasses: ConfigurableFileCollection
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val fixtureResources: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> = listOf(
+        "-Dtext-fixtures.jar.path=${fixtureJar.get().asFile.absolutePath}",
+        "-Dtext-fixtures.kotlin.classes.path=${fixtureKotlinClasses.singleFile.absolutePath}",
+        "-Dtext-fixtures.resources.path=${fixtureResources.singleFile.absolutePath}"
+    )
 }

@@ -18,14 +18,3 @@ jdkModuleAccess {
     modules.add("jdk.jdeps")
     exports.add("jdk.jdeps/com.sun.tools.javap")
 }
-
-tasks {
-    jar {
-        manifest {
-            attributes(
-                "Implementation-Title" to project.name,
-                "Implementation-Version" to project.version
-            )
-        }
-    }
-}

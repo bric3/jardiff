@@ -11,6 +11,7 @@
 plugins {
     // Apply the common convention plugin for shared build configuration between library and application projects.
     id("jardiff.kotlin-common-conventions")
+    id("jardiff.jdk-module-access-consumer-conventions")
     `java-library`
     `jvm-test-suite`
     id("org.jetbrains.dokka")
@@ -20,9 +21,17 @@ tasks {
     val dokkaGenerate by existing
 
     register<Jar>(JAVADOC_JAR_TASK_NAME) {
-        dependsOn(dokkaGenerate)
-        from(layout.buildDirectory.dir("dokka/html"))
-        archiveClassifier.set("javadoc")
+        from(dokkaGenerate)
+        archiveClassifier = "javadoc"
+    }
+
+    jar {
+        manifest {
+            attributes(
+                "Implementation-Title" to project.name,
+                "Implementation-Version" to project.version
+            )
+        }
     }
 }
 

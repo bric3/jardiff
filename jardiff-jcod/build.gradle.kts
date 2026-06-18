@@ -21,7 +21,6 @@ plugins {
 val asmtoolsCommit = "dbecba9cd85e2e7709f6088b1cac3484749f69f3"
 val asmtoolsArchive = layout.buildDirectory.file("asmtools/asmtools-$asmtoolsCommit.tar.gz")
 val asmtoolsExtractDir = layout.buildDirectory.dir("asmtools/source")
-val asmtoolsSourceDir = asmtoolsExtractDir.map { it.dir("asmtools-$asmtoolsCommit") }
 val asmtoolsAntBuildDir = layout.buildDirectory.dir("asmtools/build")
 val asmtoolsJar = layout.buildDirectory.file("asmtools/asmtools.jar")
 val openJdkJcodCommit = "e634995278df705be979c3d67b78a4319e32bfcc"
@@ -29,15 +28,6 @@ val openJdkJcodArchive = layout.buildDirectory.file("openjdk-jcod/jdk26u-$openJd
 val openJdkJcodDir = layout.buildDirectory.dir("openjdk-jcod/source")
 
 tasks {
-    jar {
-        manifest {
-            attributes(
-                "Implementation-Title" to project.name,
-                "Implementation-Version" to project.version
-            )
-        }
-    }
-
     val downloadAsmToolsArchive by registering(Download::class) {
         description = "Download the pinned OpenJDK AsmTools archive for compatibility testing."
         src("https://github.com/openjdk/asmtools/archive/$asmtoolsCommit.tar.gz")
@@ -47,13 +37,12 @@ tasks {
         tempAndMove(true)
     }
 
-    val extractAsmToolsArchive by registering(Copy::class) {
+    val extractAsmToolsArchive by registering(Sync::class) {
         description = "Extract the pinned OpenJDK AsmTools archive for compatibility testing."
-        dependsOn(downloadAsmToolsArchive)
-        from(tarTree(resources.gzip(downloadAsmToolsArchive.map { it.dest  })))
+        from(downloadAsmToolsArchive.map { tarTree(resources.gzip(it.dest)) })
         into(asmtoolsExtractDir)
-        notCompatibleWithConfigurationCache("Extracts an external source archive for an opt-in compatibility test.")
     }
+    val asmtoolsSourceDir = layout.dir(extractAsmToolsArchive.map { it.destinationDir.resolve("asmtools-$asmtoolsCommit") })
 
     val downloadOpenJdkJcodArchive by registering(Download::class) {
         description = "Download the pinned OpenJDK JDK 26 update archive for JCod compatibility testing."
@@ -64,24 +53,21 @@ tasks {
         tempAndMove(true)
     }
 
-    val extractOpenJdkJcodFiles by registering(Copy::class) {
+    val extractOpenJdkJcodFiles by registering(Sync::class) {
         description = "Extract OpenJDK JCod test files used by compatibility tests."
-        dependsOn(downloadOpenJdkJcodArchive)
-        from(tarTree(resources.gzip(downloadOpenJdkJcodArchive.map { it.dest  }))) {
+        from(downloadOpenJdkJcodArchive.map { tarTree(resources.gzip(it.dest)) }) {
             include("jdk26u-$openJdkJcodCommit/test/**/*.jcod")
         }
         into(openJdkJcodDir)
         includeEmptyDirs = false
-        notCompatibleWithConfigurationCache("Extracts an external source archive for an opt-in compatibility test.")
     }
+    val extractedOpenJdkJcodDir = layout.dir(extractOpenJdkJcodFiles.map { it.destinationDir })
 
     val buildAsmToolsJar by registering(BuildAsmToolsJar::class) {
         description = "Build the external OpenJDK AsmTools jar used by compatibility tests."
-        dependsOn(extractAsmToolsArchive)
-        sourceDir.set(asmtoolsSourceDir)
-        antBuildDir.set(asmtoolsAntBuildDir)
-        outputJar.set(asmtoolsJar)
-        notCompatibleWithConfigurationCache("Uses Gradle's AntBuilder to build an external source archive.")
+        sourceDir = asmtoolsSourceDir
+        antBuildDir = asmtoolsAntBuildDir
+        outputJar = asmtoolsJar
     }
 }
 
@@ -101,25 +87,47 @@ testing {
                     testTask.configure {
                         description = "Verifies emitted JCod with external OpenJDK AsmTools."
                         shouldRunAfter(tasks.test)
-                        dependsOn(tasks.named("buildAsmToolsJar"))
-                        dependsOn(tasks.named("extractOpenJdkJcodFiles"))
-                        inputs.file(asmtoolsJar)
-                            .withPropertyName("asmtoolsJar")
-                            .withPathSensitivity(PathSensitivity.NONE)
-                        inputs.dir(openJdkJcodDir)
-                            .withPropertyName("openJdkJcodDir")
-                            .withPathSensitivity(PathSensitivity.RELATIVE)
-                        inputs.dir(asmtoolsSourceDir)
-                            .withPropertyName("asmtoolsSourceDir")
-                            .withPathSensitivity(PathSensitivity.RELATIVE)
-                        systemProperty("jardiff.asmtools.jar", asmtoolsJar.get().asFile.absolutePath)
-                        systemProperty("jardiff.asmtools.jcod.dir", asmtoolsSourceDir.get().asFile.absolutePath)
-                        systemProperty("jardiff.openjdk.jcod.dir", openJdkJcodDir.get().asFile.absolutePath)
+                        val buildAsmToolsJar = tasks.named<BuildAsmToolsJar>("buildAsmToolsJar")
+                        val asmtoolsSourceDir = layout.dir(
+                            tasks.named<Sync>("extractAsmToolsArchive")
+                                .map { it.destinationDir.resolve("asmtools-$asmtoolsCommit") }
+                        )
+                        val extractedOpenJdkJcodDir = layout.dir(
+                            tasks.named<Sync>("extractOpenJdkJcodFiles")
+                                .map { it.destinationDir }
+                        )
+                        jvmArgumentProviders.add(
+                            objects.newInstance(JcodCompatibilityArgumentProvider::class.java).also {
+                                it.asmtoolsJar = buildAsmToolsJar.flatMap { task -> task.outputJar }
+                                it.asmtoolsJcodDir = asmtoolsSourceDir
+                                it.openJdkJcodDir = extractedOpenJdkJcodDir
+                            }
+                        )
                     }
                 }
             }
         }
     }
+}
+
+abstract class JcodCompatibilityArgumentProvider : CommandLineArgumentProvider {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val asmtoolsJar: RegularFileProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val asmtoolsJcodDir: DirectoryProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val openJdkJcodDir: DirectoryProperty
+
+    override fun asArguments(): Iterable<String> = listOf(
+        "-Djardiff.asmtools.jar=${asmtoolsJar.get().asFile.absolutePath}",
+        "-Djardiff.asmtools.jcod.dir=${asmtoolsJcodDir.get().asFile.absolutePath}",
+        "-Djardiff.openjdk.jcod.dir=${openJdkJcodDir.get().asFile.absolutePath}"
+    )
 }
 
 abstract class BuildAsmToolsJar : DefaultTask() {
@@ -140,6 +148,12 @@ abstract class BuildAsmToolsJar : DefaultTask() {
     fun buildJar() {
         val sourceDir = sourceDir.get().asFile
         val buildDir = antBuildDir.get().asFile
+        val output = outputJar.get().asFile
+        fileSystemOperations.delete {
+            delete(buildDir)
+            delete(output)
+        }
+
         ant.withGroovyBuilder {
             "ant"(
                 "antfile" to sourceDir.resolve("build/build.xml").absolutePath,
@@ -153,7 +167,6 @@ abstract class BuildAsmToolsJar : DefaultTask() {
             }
         }
 
-        val output = outputJar.get().asFile
         val builtJar = buildDir.resolve("binaries/lib/asmtools.jar")
         check(builtJar.isFile) {
             "Could not find built asmtools jar at $builtJar"

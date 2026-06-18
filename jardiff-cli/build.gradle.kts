@@ -20,10 +20,7 @@ dependencies {
     implementation(project(":jardiff-differ"))
     implementation(libs.picocli)
 
-    add(
-        "jdkModuleAccessManifests",
-        project(mapOf("path" to ":jardiff-javap", "configuration" to "jdkModuleAccessManifestElements"))
-    )
+    jdkModuleAccessManifests(project(":jardiff-javap"))
 }
 
 application {
@@ -33,16 +30,7 @@ application {
 
 
 tasks {
-    // use ./gradlew :jardiff-cli:run --args="arg1 arg2"
     val run by existing(JavaExec::class) {
-    }
-
-    shadowJar {
-        manifest {
-            attributes(
-                "Implementation-Title" to project.name,
-                "Implementation-Version" to project.version
-            )
-        }
+        description = "Run jardiff with `./gradlew :jardiff-cli:run --args=\"arg1 arg2\"`"
     }
 }

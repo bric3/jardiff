@@ -8,11 +8,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import org.gradle.api.artifacts.type.ArtifactTypeDefinition
-import org.gradle.api.attributes.Usage
-import org.gradle.api.tasks.JavaExec
-import org.gradle.api.tasks.testing.Test
-
 plugins {
     kotlin("jvm")
 }
@@ -22,15 +17,6 @@ repositories {
 }
 
 group = "io.github.bric3.jardiff"
-
-val jdkModuleAccessManifests = configurations.register(JDK_MODULE_ACCESS_MANIFESTS_CONFIGURATION_NAME) {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-    attributes {
-        attribute(Usage.USAGE_ATTRIBUTE, objects.named<Usage>(JDK_MODULE_ACCESS_MANIFEST_USAGE))
-        attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, JDK_MODULE_ACCESS_MANIFEST_ARTIFACT_TYPE)
-    }
-}
 
 kotlin {
     compilerOptions {
@@ -45,21 +31,6 @@ java {
     }
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-}
-
-plugins.withId("java") {
-    fun moduleAccessArgumentProvider() =
-        objects.newInstance(JdkModuleAccessManifestArgumentProvider::class.java).also { provider ->
-            provider.inputFiles.from(jdkModuleAccessManifests)
-        }
-
-    tasks.withType<Test>().configureEach {
-        jvmArgumentProviders.add(moduleAccessArgumentProvider())
-    }
-
-    tasks.withType<JavaExec>().configureEach {
-        jvmArgumentProviders.add(moduleAccessArgumentProvider())
-    }
 }
 
 testing {

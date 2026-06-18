@@ -1,5 +1,4 @@
 import io.github.bric3.gradle.executableArchive.ExecutableJarTask
-import org.gradle.api.tasks.compile.JavaCompile
 
 /*
  * jardiff
@@ -13,6 +12,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
     id("jardiff.kotlin-common-conventions")
+    id("jardiff.jdk-module-access-consumer-conventions")
     application
     id("com.gradleup.shadow")
 }
@@ -44,7 +44,14 @@ tasks {
 
     shadowJar {
         from(java8Main.output)
-        manifest.from(mergeJdkModuleAccessManifest.flatMap { it.outputFile })
+        dependsOn(mergeJdkModuleAccessManifest)
+        manifest {
+            attributes(
+                "Implementation-Title" to project.name,
+                "Implementation-Version" to project.version
+            )
+            from(mergeJdkModuleAccessManifest.flatMap { it.outputFile })
+        }
 
         archiveBaseName = project.name
         archiveClassifier = ""
