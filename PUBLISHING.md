@@ -29,7 +29,7 @@ Eventually inspect the deployment:
 # Inspect the zip in build/nmcp/zip/aggregation.zip
 ```
 
-Also, each published modules have their expanded form in `build/nmcp/m2/io/github/bric3/jardiff/`. 
+Also, each published module has their expanded form in `build/nmcp/m2/io/github/bric3/jardiff/`. 
 
 
 ```bash
