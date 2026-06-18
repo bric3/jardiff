@@ -40,5 +40,8 @@ gradlePlugin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", versi
 gradlePlugin-graalvm = { module = "org.graalvm.buildtools:native-gradle-plugin", version.ref = "gradlePlugin-graalvm" }
 gradlePlugin-nmcp = { module = "com.gradleup.nmcp:com.gradleup.nmcp.gradle.plugin", version.ref = "gradlePlugin-nmcp" }
 
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "gradlePlugin-kotlin" }
+
 [bundles]
 asm = ["asm", "asm-util"]
