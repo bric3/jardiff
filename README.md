@@ -1,6 +1,6 @@
 # Jardiff
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.bric3.jardiff/jardiff.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.bric3.jardiff/jardiff)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.bric3.jardiff/jardiff-cli.svg?label=Maven%20Central)]([https://search.maven.org/artifact/io.github.bric3.jardiff/jardiff-cli](https://central.sonatype.com/artifact/io.github.bric3.jardiff/jardiff-cli))
 [![GitHub release](https://img.shields.io/github/release/bric3/jardiff.svg?label=Github%20Release)](https://github.com/bric3/jardiff/releases/latest)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/bric3/jardiff/ci.yml?branch=main&label=build)](https://github.com/bric3/jardiff/actions?query=branch%3Amain)
 [![License](https://img.shields.io/github/license/bric3/jardiff.svg)](LICENSE)
