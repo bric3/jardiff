@@ -7,21 +7,6 @@
 
 Jardiff is a command-line tool for comparing the contents of JAR files and directories. It provides detailed, line-based diffs of class files and resources, making it easy to spot changes between builds, releases, or different versions of Java/Kotlin projects.
 
-> [!NOTE]
-> This project is not affiliated with Lightbend or the original jardiff project.
-> 
-> While [lightbend-labs/jardiff](https://github.com/lightbend-labs/jardiff) and this tool share the same name and similar goals, they have different features:
-> 
-> The **lightbend-labs/jardiff** focuses on Scala projects, and it has some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
-> 
-> However, **bric3/jardiff** offers a more versatile tooling to inspect class differences
-> * Additional to the usual diff output, it provides statistics (`--stat`) and status (`--status`)
->   modes similar to git diff/status
-> * Supports class extension coalescing, in case classes are renamed to other extensions like `.bin`, `.clazz`, etc.
-> * Various text representation modes for class files
-> * Flexible glob pattern filtering for including/excluding files
-> * Offers limited support for non-binary text files
-
 Example output in default mode:
 
 ```diff
@@ -94,6 +79,20 @@ When output piped to [delta](https://github.com/dandavison/delta), it looks like
 
 <img alt="jardiff with delta" src=".github/images/jardiff-delta-screenshot.png" width="600"/>
 
+> [!NOTE]
+> This project is not affiliated with Lightbend or the original jardiff project.
+> 
+> While [lightbend-labs/jardiff](https://github.com/lightbend-labs/jardiff) and this tool share the same name and similar goals, they have different features:
+> 
+> The **lightbend-labs/jardiff** focuses on Scala projects, and it has some useful flags to tweak the bytecode output (ordering, suppress private members). This tool also has a mode to create a git repository to leverage git diff capabilities.
+> 
+> However, **bric3/jardiff** offers a more versatile tooling to inspect class differences
+> * Additional to the usual diff output, it provides statistics (`--stat`) and status (`--status`)
+>   modes similar to git diff/status
+> * Supports class extension coalescing, in case classes are renamed to other extensions like `.bin`, `.clazz`, etc.
+> * Various text representation modes for class files
+> * Flexible glob pattern filtering for including/excluding files
+> * Offers limited support for non-binary text files
 
 ## Features
 
