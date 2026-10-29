@@ -128,6 +128,9 @@ Features planned for future releases... :
 > [!TIP]
 > The jar on the Github release is an executable jar, so you can run it directly with `./jardiff-0.1.0-SNAPSHOT.jar {left} {right}` after downloading it (`chmod`ing it executable as needed).
 
+Run `./gradlew :jardiff-cli:install` to install the executable as `~/.local/bin/jardiff`.
+Add `~/.local/bin` to `PATH` to invoke `jardiff` directly. Installing replaces an existing executable at that path.
+
 Build it `./gradlew build`, then run it:
 
 ```shell
