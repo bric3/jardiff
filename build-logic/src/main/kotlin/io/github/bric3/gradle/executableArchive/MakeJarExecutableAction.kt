@@ -74,14 +74,17 @@ abstract class MakeJarExecutableAction @Inject constructor(
     }
 
     companion object {
-        const val DEFAULT_SHELL_HEADER = "#!/bin/sh\n\nexec java \$JAVA_OPTS -jar \$0 \"\$@\""
+        val DEFAULT_SHELL_HEADER: String = requireNotNull(
+            MakeJarExecutableAction::class.java.getResourceAsStream("/java-launcher.sh")
+        ).bufferedReader(Charsets.UTF_8).use { it.readText() }
+            .replace("@MINIMUM_JAVA_VERSION@", "11")
 
         /**
          * Creates an executable JAR by prepending a shell script header.
          *
          * @param inputFile The source JAR file
          * @param outputFile The destination file for the executable JAR
-         * @param shellHeader The shell script header to prepend (defaults to a basic sh script).
+         * @param shellHeader The shell script header to prepend (defaults to installed Java runtime discovery).
          *                    A double newline separator is automatically appended.
          */
         fun makeZipExecutable(

@@ -34,3 +34,12 @@ tasks {
         description = "Run jardiff with `./gradlew :jardiff-cli:run --args=\"arg1 arg2\"`"
     }
 }
+
+tasks.named<Test>("test") {
+    val executableArchive = files(tasks.named("executableShadowJar"))
+    inputs.files(executableArchive).withPathSensitivity(PathSensitivity.NONE)
+    doFirst {
+        systemProperty("launcher.executable", executableArchive.singleFile.absolutePath)
+        systemProperty("launcher.minimum", "11")
+    }
+}

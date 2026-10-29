@@ -131,6 +131,13 @@ Features planned for future releases... :
 Run `./gradlew :jardiff-cli:install` to install the executable as `~/.local/bin/jardiff`.
 Add `~/.local/bin` to `PATH` to invoke `jardiff` directly. Installing replaces an existing executable at that path.
 
+The executable's embedded shell launcher selects an installed Java 11+ runtime in this order:
+mise, SDKMAN!, asdf-vm, jenv, jabba, `JAVA_HOME`, then `java` on `PATH`.
+It checks each manager's selected runtime when available, then its other installed runtimes,
+and continues to the next manager when none is compatible. It never downloads a JDK.
+SDKMAN!, asdf-vm, jenv and jabba installation directories honour their standard environment overrides.
+`JAVA_OPTS` supplies JVM arguments. Running `java -jar` directly uses the Java executable you specify.
+
 Build it `./gradlew build`, then run it:
 
 ```shell
